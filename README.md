@@ -16,14 +16,26 @@ Escolha a mídia e o gênero e veja as opções, com ficha completa e títulos r
 Na ficha de cada filme e série aparece **onde assistir no Brasil** (assinatura, grátis, aluguel e compra), com o pôster e a nota do TMDB.
 Os dados vêm da JustWatch, via API do TMDB, e são buscados pela mesma automação diária. Este produto usa a API do TMDB, mas não é endossado nem certificado pelo TMDB.
 
+## Capas e resumos de livros e jogos
+
+- **Livros:** capa e resumo pelo Google Books (com a Open Library como reserva de capa). O resumo só aparece quando o Notion não tem sinopse.
+- **Jogos:** capa e resumo pelo IGDB (Twitch). Os resumos do IGDB estão em inglês.
+- Títulos já encontrados são reaproveitados; só os novos são consultados a cada dia.
+
+## Conversa com o Claude
+
+A conversa só funciona na versão aberta no claude.ai. Neste site, o botão **Conversar com o Claude** abre essa versão.
+
 ## Configuração (uma vez só)
 
 1. **Criar a integração no Notion:** em https://www.notion.so/profile/integrations → **Nova integração** (tipo *Interna*, só leitura de conteúdo). Copie o *Internal Integration Secret*.
 2. **Dar acesso às páginas:** em cada página (Filmes, Streaming, Leitura, Games), menu **⋯** → **Conexões** → adicione a integração criada.
 3. **Guardar a chave no GitHub:** neste repositório, **Settings** → **Secrets and variables** → **Actions** → **New repository secret**, nome `NOTION_TOKEN`, valor = a chave copiada.
 4. **Guardar o token do TMDB:** mesmo caminho do passo 3, nome `TMDB_TOKEN`, valor = o *Token de Leitura da API* (o mais longo, que começa com `eyJ`).
-5. **Ativar o GitHub Pages:** **Settings** → **Pages** → *Source*: **GitHub Actions**.
-6. Rode a automação uma vez (passo de atualização acima).
+5. **Guardar a chave do Google Books:** secret `GOOGLE_BOOKS_KEY` (chave de API do Google Cloud com a *Books API* ativada).
+6. **Guardar as credenciais do IGDB:** secrets `TWITCH_CLIENT_ID` e `TWITCH_CLIENT_SECRET` (aplicativo criado em dev.twitch.tv/console).
+7. **Ativar o GitHub Pages:** **Settings** → **Pages** → *Source*: **GitHub Actions**.
+8. Rode a automação uma vez (passo de atualização acima).
 
 ## Observações
 

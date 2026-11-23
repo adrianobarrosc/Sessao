@@ -146,6 +146,8 @@ h1 { font: 800 clamp(40px, 6vw, 64px)/.92 var(--display); margin: 0; letter-spac
 .d-head h2.long { font-size: clamp(30px, 4vw, 40px); line-height: .98; }
 .d-head .orig { margin: 0; color: var(--muted); }
 .d-syn { font-size: 16px; max-width: 62ch; }
+.d-syn.ext p { margin: 0 0 10px; }
+.d-syn.ext .attr { margin-top: 4px; }
 .facts { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 1px; background: var(--line); border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; }
 .facts div { background: var(--surface); padding: 10px 14px; }
 .facts dt { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); }
@@ -156,7 +158,7 @@ section h3 { font: 700 26px/1.1 var(--display); letter-spacing: .04em; text-tran
 .rel .art .title { font-size: 22px; }
 
 /* conversa */
-#chat-fab { position: fixed; right: 24px; bottom: 24px; z-index: 12; background: var(--ink); border-color: var(--ink); color: var(--bg); padding: 13px 22px; box-shadow: 0 10px 30px rgb(0 0 0 / .5); }
+#chat-fab { text-decoration: none; position: fixed; right: 24px; bottom: 24px; z-index: 12; background: var(--ink); border-color: var(--ink); color: var(--bg); padding: 13px 22px; box-shadow: 0 10px 30px rgb(0 0 0 / .5); }
 body.chat-open #chat-fab { display: none; }
 #chat { position: fixed; left: 0; top: 0; bottom: 0; width: min(420px, 100%); z-index: 15; background: var(--surface); border-right: 1px solid var(--line); display: flex; flex-direction: column; box-shadow: 20px 0 40px rgb(0 0 0 / .4); }
 @media (min-width: 1100px) { body.chat-open { padding-left: 420px; } }
@@ -743,7 +745,8 @@ function renderGenres() {
 
 const KIND = { filmes: 'Filme', streaming: 'Série', leitura: 'Leitura', games: 'Jogo' };
 const IMG = 'https://image.tmdb.org/t/p/';
-const posterStyle = (it, size = 'w342') => it.tmdb?.poster ? ` style="--poster: url('${IMG}${size}${encodeURI(it.tmdb.poster)}')"` : '';
+const coverUrl = (it, size = 'w342') => it.tmdb?.poster ? IMG + size + encodeURI(it.tmdb.poster) : (it.visual?.cover ? (size === 'w780' ? it.visual.cover.replace('t_cover_big', 't_720p') : it.visual.cover) : '');
+const posterStyle = (it, size = 'w342') => coverUrl(it, size) ? ` style="--poster: url('${coverUrl(it, size).replace(/'/g, '%27')}')"` : '';
 
 function watchHTML(it) {
   if (it.media !== 'filmes' && it.media !== 'streaming') return '';
@@ -765,7 +768,7 @@ function cardHTML(it, extra = '') {
   const m = MEDIA[it.media];
   const sub = [it.original, it.creator, it.year].filter(Boolean).join(' · ');
   return `<button class="card m-${it.media}" data-uid="${esc(uid(it))}">
-    <span class="art${it.tmdb?.poster ? ' has-poster' : ''}"${posterStyle(it)}>
+    <span class="art${coverUrl(it) ? ' has-poster' : ''}"${posterStyle(it)}>
       <span class="kind"><span aria-hidden="true">${m.icon}</span> ${KIND[it.media]}${it.flag ? `<i class="flag f-${esc(it.flag)}" title="Linha destacada no Notion"></i>` : ''}</span>
       <strong class="title">${esc(it.title)}</strong>
     </span>
@@ -804,13 +807,14 @@ function renderDetail() {
     ? `<div class="rel">${arr.map(({ o, shared }) => cardHTML(o, `<span class="why">${shared.length ? 'em comum: ' + shared.slice(0, 3).map(esc).join(', ') : 'mesmo autor/diretor'}</span>`)).join('')}</div>`
     : '<p class="muted">Nada parecido por aqui.</p>';
   $('#detail-body').innerHTML = `
-    <div class="d-head m-${fresh.media}${fresh.tmdb?.poster ? ' has-poster' : ''}"${posterStyle(fresh, 'w780')}>
+    <div class="d-head m-${fresh.media}${coverUrl(fresh) ? ' has-poster' : ''}"${posterStyle(fresh, 'w780')}>
       <span class="kind"><span aria-hidden="true">${m.icon}</span> ${KIND[fresh.media]} · ${esc(fresh.lists.join(' · '))}</span>
       <h2 id="d-title" class="${fresh.title.length > 28 ? 'long' : ''}">${esc(fresh.title)}</h2>
       ${fresh.original ? `<p class="orig">${esc(fresh.original)}</p>` : ''}
       <div class="tags">${fresh.genres.map(g => `<button class="tag act" data-genre-pick="${esc(g)}" title="Filtrar por ${esc(g)}">${esc(g)}</button>`).join('')}</div>
     </div>
-    ${fresh.synopsis ? `<p class="d-syn">${esc(fresh.synopsis)}</p>` : ''}
+    ${fresh.synopsis ? `<p class="d-syn">${esc(fresh.synopsis)}</p>`
+      : fresh.extSummary ? `<div class="d-syn ext">${fresh.extSummary.text.split('\n').filter(Boolean).slice(0, 6).map(p => `<p>${esc(p)}</p>`).join('')}<p class="attr">Resumo: ${esc(fresh.extSummary.source)}${fresh.extSummary.lang === 'en' ? ' (em inglês)' : ''}</p></div>` : ''}
     <dl class="facts">
       ${fresh.fields.map(([k, v]) => `<div><dt>${esc(k)}</dt><dd>${esc(v)}</dd></div>`).join('')}
       ${fresh.tmdb?.rating ? `<div><dt>Nota no TMDB</dt><dd>★ ${fresh.tmdb.rating.toFixed(1).replace('.', ',')}</dd></div>` : ''}
@@ -1037,7 +1041,16 @@ function bindChat() {
   });
   (async () => {
     try { CHAT.sample = window.claude && window.claude.use ? await window.claude.use('sample') : null; } catch (e) { CHAT.sample = null; }
-    $('#chat-fab').hidden = !CHAT.sample;
+    const fab = $('#chat-fab');
+    if (CHAT.sample) { fab.hidden = false; return; }
+    if (!window.claude) {
+      // fora do claude.ai: o botão leva para a versão com conversa
+      const a = document.createElement('a');
+      a.id = 'chat-fab'; a.className = 'btn'; a.href = 'https://claude.ai/artifact/JKApuri2Rf3JsZaavCdBk5';
+      a.target = '_blank'; a.rel = 'noopener'; a.textContent = '💬 Conversar com o Claude ↗';
+      a.title = 'Abre a versão desta página no claude.ai, onde a conversa funciona';
+      fab.replaceWith(a);
+    }
   })();
 }
 bindChat();

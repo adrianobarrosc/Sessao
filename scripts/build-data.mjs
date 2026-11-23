@@ -6,9 +6,12 @@ const require = createRequire(import.meta.url);
 const { parsePage, SOURCES } = require('./parser.cjs');
 
 import { enrichWithTmdb } from './tmdb.mjs';
+import { enrichBooks, enrichGames } from './visuals.mjs';
 const TOKEN = process.env.NOTION_TOKEN;
 const TMDB = process.env.TMDB_TOKEN;
-if (!TOKEN && !TMDB) { console.error('Defina NOTION_TOKEN e/ou TMDB_TOKEN.'); process.exit(1); }
+const GBOOKS = process.env.GOOGLE_BOOKS_KEY;
+const TW_ID = process.env.TWITCH_CLIENT_ID, TW_SECRET = process.env.TWITCH_CLIENT_SECRET;
+if (!TOKEN && !TMDB && !GBOOKS && !TW_ID) { console.error('Defina ao menos um token (NOTION_TOKEN, TMDB_TOKEN, GOOGLE_BOOKS_KEY, TWITCH_CLIENT_ID).'); process.exit(1); }
 const API = 'https://api.notion.com/v1';
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 
@@ -88,6 +91,14 @@ for (const src of SOURCES) {
 if (TMDB) {
   try { await enrichWithTmdb(out.sources, TMDB, previous.sources || {}); }
   catch (e) { console.error('TMDB: ' + e.message + ' — seguindo sem onde assistir'); }
+}
+if (out.sources.leitura?.items) {
+  try { await enrichBooks(out.sources.leitura.items, previous.sources?.leitura?.items, GBOOKS); }
+  catch (e) { console.error('Livros: ' + e.message); }
+}
+if (TW_ID && TW_SECRET && out.sources.games?.items) {
+  try { await enrichGames(out.sources.games.items, previous.sources?.games?.items, TW_ID, TW_SECRET); }
+  catch (e) { console.error('Jogos: ' + e.message); }
 }
 if (!TOKEN) out.generatedAt = previous.generatedAt || out.generatedAt;
 writeFileSync('data.json', JSON.stringify(out));
