@@ -17,7 +17,7 @@ export async function enrichWithTmdb(sources, token, previous = {}) {
   // reaproveita o id já encontrado antes (evita trocar de título a cada dia)
   const prevIds = new Map();
   for (const key of ['filmes', 'streaming'])
-    for (const it of previous[key]?.items || []) if (it.tmdb?.id) prevIds.set(key + '|' + it.title, it.tmdb);
+    for (const it of previous[key]?.items || []) if (it.tmdb?.id && it.tmdb.v === 2) prevIds.set(key + '|' + it.title, it.tmdb);
 
   const candidates = (it) => {
     const out = [];
@@ -31,16 +31,33 @@ export async function enrichWithTmdb(sources, token, previous = {}) {
     return { names: [...new Set(out.filter(Boolean))], year };
   };
 
+  const norm = x => (x || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/&/g, 'e').replace(/[^a-z0-9]+/g, ' ').trim();
+  const score = (r, names, year, kind) => {
+    const titles = [r.title, r.original_title, r.name, r.original_name].filter(Boolean).map(norm);
+    const wanted = names.map(norm).concat(norm(it_title_holder.current));
+    let sc = 0;
+    if (titles.some(t => wanted.includes(t))) sc += 10;
+    else if (titles.some(t => wanted.some(w => w && (t.startsWith(w) || w.startsWith(t))))) sc += 3;
+    const d = (r.release_date || r.first_air_date || '').slice(0, 4);
+    if (year && d) { const diff = Math.abs(+d - +year); sc += diff === 0 ? 4 : diff === 1 ? 3 : diff <= 2 ? 1 : -2; }
+    sc += Math.log10((r.popularity || 0) + 1);
+    sc += Math.min(r.vote_count || 0, 2000) / 1000;
+    if ((r.vote_count || 0) < 5) sc -= 3;
+    if (/making of|behind the|on '|special|bastidores/i.test(r.title || r.name || '')) sc -= 6;
+    return sc;
+  };
+  const it_title_holder = { current: '' };
   const find = async (it, kind) => {
     const { names, year } = candidates(it);
+    it_title_holder.current = it.title.replace(/\([^)]*\)/g, '').trim();
+    const seen = new Map();
     for (const query of names) {
-      const params = { query, language: 'pt-BR', include_adult: 'false' };
-      if (year) params[kind === 'movie' ? 'primary_release_year' : 'first_air_date_year'] = year;
-      let r = await get(`/search/${kind}`, params);
-      if (!r.results?.length && year) { delete params.primary_release_year; delete params.first_air_date_year; r = await get(`/search/${kind}`, params); }
-      if (r.results?.length) return r.results[0];
+      const r = await get(`/search/${kind}`, { query, language: 'pt-BR', include_adult: 'false' });
+      for (const x of (r.results || []).slice(0, 10)) if (!seen.has(x.id)) seen.set(x.id, x);
     }
-    return null;
+    let best = null, bestScore = -Infinity;
+    for (const x of seen.values()) { const sc = score(x, names, year, kind); if (sc > bestScore) { best = x; bestScore = sc; } }
+    return bestScore >= 3 ? best : null;
   };
 
   const mapList = (arr) => (arr || []).map(p => ({ name: p.provider_name, logo: p.logo_path }));
@@ -64,7 +81,7 @@ export async function enrichWithTmdb(sources, token, previous = {}) {
         const w = await get(`/${kind}/${id}/watch/providers`);
         const br = w.results?.BR;
         it.tmdb = {
-          id, type: kind, poster: info.poster || null, rating: info.rating || null, name: info.name || null,
+          v: 2, id, type: kind, poster: info.poster || null, rating: info.rating || null, name: info.name || null,
           watch: br ? { link: br.link, flatrate: mapList(br.flatrate), free: mapList(br.free), ads: mapList(br.ads), rent: mapList(br.rent), buy: mapList(br.buy) } : { link: `https://www.themoviedb.org/${kind}/${id}/watch?locale=BR`, flatrate: [], free: [], ads: [], rent: [], buy: [] },
         };
         ok++;
