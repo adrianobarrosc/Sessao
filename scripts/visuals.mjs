@@ -5,10 +5,10 @@ const norm = x => (x || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '
 const stripHtml = s => (s || '').replace(/<br\s*\/?>/gi, '\n').replace(/<[^>]+>/g, '').replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&amp;/g, '&').replace(/\s+\n/g, '\n').trim();
 const VERSION = 1;
 
-async function getJson(url, opts = {}) {
-  for (let tent = 0; tent < 4; tent++) {
+async function getJson(url, opts = {}, tries = 4) {
+  for (let tent = 0; tent < tries; tent++) {
     const res = await fetch(url, opts);
-    if (res.status === 429 || res.status >= 500) { await sleep(1500 * (tent + 1)); continue; }
+    if (res.status === 429 || res.status >= 500) { if (tent < tries - 1) await sleep(1500 * (tent + 1)); continue; }
     if (!res.ok) throw new Error(`${res.status} em ${url.split('?')[0]}`);
     return res.json();
   }
@@ -30,7 +30,9 @@ function reuse(items, previousItems) {
 const firstAuthor = a => (a || '').replace(/\([^)]*\)/g, '').split(/;|,| e | and /)[0].trim();
 const cleanTitle = t => t.replace(/\([^)]*\)/g, '').replace(/^(trilogia|saga|série)\s+/i, '').trim();
 
+let googleDown = false;
 async function googleBook(it, key) {
+  if (googleDown) return null;
   const title = cleanTitle(it.title), author = firstAuthor(it.creator);
   const tries = [
     `intitle:"${title}"${author ? ` inauthor:"${author}"` : ''}`,
@@ -40,7 +42,9 @@ async function googleBook(it, key) {
   for (const q of tries) {
     for (const lang of ['pt', '']) {
       const url = `https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(q)}&maxResults=10&printType=books${lang ? '&langRestrict=' + lang : ''}${key ? '&key=' + key : ''}`;
-      const j = await getJson(url);
+      let j;
+      try { j = await getJson(url, {}, key ? 3 : 1); }
+      catch (e) { googleDown = true; console.error('Google Books recusou as consultas (' + e.message + '); seguindo só com a Open Library nesta execução.'); return null; }
       for (const v of j.items || []) {
         const vi = v.volumeInfo || {};
         let sc = 0;
@@ -62,7 +66,7 @@ async function googleBook(it, key) {
 
 async function openLibraryCover(it) {
   const url = `https://openlibrary.org/search.json?title=${encodeURIComponent(cleanTitle(it.title))}${firstAuthor(it.creator) ? '&author=' + encodeURIComponent(firstAuthor(it.creator)) : ''}&limit=5&fields=title,cover_i`;
-  const j = await getJson(url, { headers: { 'User-Agent': 'Sessao/1.0 (github.com/adrianobarrosc/Sessao)' } });
+  const j = await getJson(url, { headers: { 'User-Agent': 'Sessao/1.0 (github.com/adrianobarrosc/Sessao)' } }, 2);
   const hit = (j.docs || []).find(d => d.cover_i);
   await sleep(400);
   return hit ? `https://covers.openlibrary.org/b/id/${hit.cover_i}-L.jpg` : null;
@@ -81,7 +85,8 @@ export async function enrichBooks(items, previousItems, key) {
         if (vi.description) summary = { text: stripHtml(vi.description), source: 'Google Books', lang: vi.language || '' };
       }
       if (!cover) cover = await openLibraryCover(it);
-      it.visual = { v: VERSION, cover, source: cover ? (cover.includes('openlibrary') ? 'Open Library' : 'Google Books') : null };
+      // sem resposta do Google, não marca o livro como consultado: tenta de novo na próxima execução
+      it.visual = { v: googleDown && !vi ? 0 : VERSION, cover, source: cover ? (cover.includes('openlibrary') ? 'Open Library' : 'Google Books') : null };
       if (!it.synopsis && summary) it.extSummary = summary;
       if (cover) ok++;
     } catch (e) { console.error(`Livros: ${it.title}: ${e.message}`); }
