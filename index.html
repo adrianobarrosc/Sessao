@@ -102,7 +102,7 @@ h1 { font: 800 clamp(40px, 6vw, 64px)/.92 var(--display); margin: 0; letter-spac
   background: linear-gradient(180deg, var(--c) 0%, color-mix(in srgb, var(--c) 35%, #000) 55%, var(--bg) 100%); transition: transform .15s, box-shadow .15s; }
 .card:hover .art, .card:focus-visible .art { transform: translateY(-3px); box-shadow: 0 14px 30px rgb(0 0 0 / .5), 0 0 0 1px var(--c); }
 .kind { font: 600 11px/1.2 var(--body); letter-spacing: .1em; text-transform: uppercase; color: var(--ink); display: flex; align-items: center; gap: 6px; }
-.art .title { font: 800 clamp(22px, 2.2vw, 30px)/.95 var(--display); letter-spacing: .01em; text-transform: uppercase; text-wrap: balance; overflow-wrap: break-word; hyphens: auto; display: -webkit-box; -webkit-line-clamp: 5; -webkit-box-orient: vertical; overflow: hidden; }
+.art .title { font: 800 clamp(22px, 2.2vw, 30px)/.95 var(--display); letter-spacing: .01em; text-transform: uppercase; text-wrap: balance; overflow-wrap: break-word; hyphens: auto; display: -webkit-box; -webkit-line-clamp: 5; -webkit-box-orient: vertical; overflow: hidden; padding-top: .14em; }
 .card .sub { font-size: 13px; color: var(--muted); line-height: 1.35; }
 .card .where { font-size: 12px; color: var(--muted); opacity: .8; }
 .tags { display: flex; flex-wrap: wrap; gap: 6px; }
@@ -117,6 +117,21 @@ h1 { font: 800 clamp(40px, 6vw, 64px)/.92 var(--display); margin: 0; letter-spac
 .empty { grid-column: 1 / -1; text-align: center; padding: 40px 0; color: var(--muted); }
 #more { margin: 28px auto 64px; display: block; }
 
+/* pôster do TMDB por cima do degradê, quando existir */
+.art.has-poster { background: linear-gradient(180deg, rgb(0 0 0 / .45) 0%, transparent 25%, transparent 45%, rgb(0 0 0 / .9) 100%), var(--poster) center / cover, linear-gradient(180deg, var(--c) 0%, color-mix(in srgb, var(--c) 35%, #000) 55%, var(--bg) 100%); }
+.art.has-poster .title { text-shadow: 0 2px 12px rgb(0 0 0 / .8); font-size: clamp(18px, 1.8vw, 24px); }
+.d-head.has-poster { background: linear-gradient(180deg, rgb(11 13 18 / .55) 0%, var(--bg) 100%), var(--poster) center 20% / cover; }
+
+/* onde assistir */
+.watch { display: grid; gap: 12px; justify-items: start; }
+.watch h3 { margin: 0; }
+.wg { display: grid; gap: 6px; }
+.wl { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); }
+.provs { display: flex; flex-wrap: wrap; gap: 8px; }
+.prov { display: inline-flex; align-items: center; gap: 8px; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 5px 12px 5px 5px; font-size: 14px; font-weight: 500; }
+.prov img { width: 28px; height: 28px; border-radius: 6px; display: block; }
+.attr { font-size: 11.5px; color: var(--muted); margin: 0; max-width: 60ch; }
+
 /* painel de detalhes */
 #detail { position: fixed; inset: 0; z-index: 20; }
 #scrim { position: absolute; inset: 0; background: rgb(0 0 0 / .6); }
@@ -127,7 +142,7 @@ h1 { font: 800 clamp(40px, 6vw, 64px)/.92 var(--display); margin: 0; letter-spac
 #detail-body > :not(.d-head) { margin: 0 28px; }
 .d-head { --c: var(--accent); display: grid; gap: 10px; padding: 80px 28px 24px; background: linear-gradient(180deg, color-mix(in srgb, var(--c) 40%, #000) 0%, var(--bg) 100%); }
 .d-head .kind { color: var(--c); }
-.d-head h2 { font: 800 clamp(40px, 6vw, 60px)/.92 var(--display); margin: 0; text-transform: uppercase; text-wrap: balance; overflow-wrap: break-word; hyphens: auto; }
+.d-head h2 { font: 800 clamp(40px, 6vw, 60px)/.92 var(--display); margin: 0; padding-top: .12em; text-transform: uppercase; text-wrap: balance; overflow-wrap: break-word; hyphens: auto; }
 .d-head h2.long { font-size: clamp(30px, 4vw, 40px); line-height: .98; }
 .d-head .orig { margin: 0; color: var(--muted); }
 .d-syn { font-size: 16px; max-width: 62ch; }
@@ -727,11 +742,30 @@ function renderGenres() {
 }
 
 const KIND = { filmes: 'Filme', streaming: 'Série', leitura: 'Leitura', games: 'Jogo' };
+const IMG = 'https://image.tmdb.org/t/p/';
+const posterStyle = (it, size = 'w342') => it.tmdb?.poster ? ` style="--poster: url('${IMG}${size}${encodeURI(it.tmdb.poster)}')"` : '';
+
+function watchHTML(it) {
+  if (it.media !== 'filmes' && it.media !== 'streaming') return '';
+  const q = encodeURIComponent((it.original || it.title).replace(/\([^)]*\)/g, '').trim());
+  const search = `https://www.themoviedb.org/search/${it.media === 'filmes' ? 'movie' : 'tv'}?query=${q}&language=pt-BR`;
+  const w = it.tmdb?.watch;
+  if (!w) return `<section class="watch"><h3>Onde assistir</h3>
+    <p class="muted">Ainda sem dados do TMDB para este título.</p>
+    <a class="btn ghost" href="${search}" target="_blank" rel="noopener">Procurar no TMDB ↗</a></section>`;
+  const groups = [['Assinatura', w.flatrate], ['Grátis', w.free], ['Grátis com anúncios', w.ads], ['Aluguel', w.rent], ['Compra', w.buy]].filter(([, l]) => l && l.length);
+  const prov = l => l.map(p => `<span class="prov">${p.logo ? `<img src="${IMG}w92${encodeURI(p.logo)}" alt="" width="28" height="28" loading="lazy">` : ''}${esc(p.name)}</span>`).join('');
+  return `<section class="watch"><h3>Onde assistir no Brasil</h3>
+    ${groups.length ? groups.map(([g, l]) => `<div class="wg"><span class="wl">${g}</span><div class="provs">${prov(l)}</div></div>`).join('')
+      : '<p class="muted">Este título não está disponível em streaming, aluguel ou compra no Brasil agora.</p>'}
+    <a class="btn ghost" href="${esc(w.link)}" target="_blank" rel="noopener">Ver no TMDB ↗</a>
+    <p class="attr">Onde assistir: dados da JustWatch via TMDB. Este produto usa a API do TMDB, mas não é endossado nem certificado pelo TMDB.</p></section>`;
+}
 function cardHTML(it, extra = '') {
   const m = MEDIA[it.media];
   const sub = [it.original, it.creator, it.year].filter(Boolean).join(' · ');
   return `<button class="card m-${it.media}" data-uid="${esc(uid(it))}">
-    <span class="art">
+    <span class="art${it.tmdb?.poster ? ' has-poster' : ''}"${posterStyle(it)}>
       <span class="kind"><span aria-hidden="true">${m.icon}</span> ${KIND[it.media]}${it.flag ? `<i class="flag f-${esc(it.flag)}" title="Linha destacada no Notion"></i>` : ''}</span>
       <strong class="title">${esc(it.title)}</strong>
     </span>
@@ -770,7 +804,7 @@ function renderDetail() {
     ? `<div class="rel">${arr.map(({ o, shared }) => cardHTML(o, `<span class="why">${shared.length ? 'em comum: ' + shared.slice(0, 3).map(esc).join(', ') : 'mesmo autor/diretor'}</span>`)).join('')}</div>`
     : '<p class="muted">Nada parecido por aqui.</p>';
   $('#detail-body').innerHTML = `
-    <div class="d-head m-${fresh.media}">
+    <div class="d-head m-${fresh.media}${fresh.tmdb?.poster ? ' has-poster' : ''}"${posterStyle(fresh, 'w780')}>
       <span class="kind"><span aria-hidden="true">${m.icon}</span> ${KIND[fresh.media]} · ${esc(fresh.lists.join(' · '))}</span>
       <h2 id="d-title" class="${fresh.title.length > 28 ? 'long' : ''}">${esc(fresh.title)}</h2>
       ${fresh.original ? `<p class="orig">${esc(fresh.original)}</p>` : ''}
@@ -779,8 +813,10 @@ function renderDetail() {
     ${fresh.synopsis ? `<p class="d-syn">${esc(fresh.synopsis)}</p>` : ''}
     <dl class="facts">
       ${fresh.fields.map(([k, v]) => `<div><dt>${esc(k)}</dt><dd>${esc(v)}</dd></div>`).join('')}
+      ${fresh.tmdb?.rating ? `<div><dt>Nota no TMDB</dt><dd>★ ${fresh.tmdb.rating.toFixed(1).replace('.', ',')}</dd></div>` : ''}
       <div><dt>No Notion</dt><dd>${esc(fresh.lists.join(' · '))}</dd></div>
     </dl>
+    ${watchHTML(fresh)}
     <a class="btn ghost notion" href="${esc(fresh.url)}" target="_blank" rel="noopener">Abrir a página ${esc(m.label)} no Notion ↗</a>
     <section><h3>${{ filmes: 'Mais filmes parecidos', streaming: 'Mais séries parecidas', leitura: 'Mais leituras parecidas', games: 'Mais jogos parecidos' }[fresh.media]}</h3>${relList(rel.same)}</section>
     <section><h3>Em outras mídias</h3>${relList(rel.other)}</section>`;

@@ -5,8 +5,10 @@ import { writeFileSync, readFileSync, existsSync } from 'node:fs';
 const require = createRequire(import.meta.url);
 const { parsePage, SOURCES } = require('./parser.cjs');
 
+import { enrichWithTmdb } from './tmdb.mjs';
 const TOKEN = process.env.NOTION_TOKEN;
-if (!TOKEN) { console.error('Defina NOTION_TOKEN.'); process.exit(1); }
+const TMDB = process.env.TMDB_TOKEN;
+if (!TOKEN && !TMDB) { console.error('Defina NOTION_TOKEN e/ou TMDB_TOKEN.'); process.exit(1); }
 const API = 'https://api.notion.com/v1';
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 
@@ -70,6 +72,7 @@ const previous = existsSync('data.json') ? JSON.parse(readFileSync('data.json', 
 const out = { generatedAt: new Date().toISOString(), sources: {} };
 let failures = 0;
 for (const src of SOURCES) {
+  if (!TOKEN) { if (previous.sources?.[src.key]) out.sources[src.key] = previous.sources[src.key]; continue; }
   try {
     const text = await render(src.id);
     const items = parsePage(src, text, 'https://www.notion.so/' + src.id);
@@ -82,5 +85,10 @@ for (const src of SOURCES) {
     if (previous.sources?.[src.key]) out.sources[src.key] = previous.sources[src.key];
   }
 }
+if (TMDB) {
+  try { await enrichWithTmdb(out.sources, TMDB, previous.sources || {}); }
+  catch (e) { console.error('TMDB: ' + e.message + ' — seguindo sem onde assistir'); }
+}
+if (!TOKEN) out.generatedAt = previous.generatedAt || out.generatedAt;
 writeFileSync('data.json', JSON.stringify(out));
-if (failures === SOURCES.length) process.exit(1);
+if (TOKEN && failures === SOURCES.length) process.exit(1);
