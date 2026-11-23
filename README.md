@@ -3,7 +3,7 @@
 Consulta rápida do meu catálogo pessoal de **filmes, séries, leituras e jogos**, que fica no Notion.
 Escolha a mídia e o gênero e veja as opções, com ficha completa e títulos relacionados.
 
-**Site:** https://adrianobarrosc.github.io/sessao/
+**Site:** https://adrianobarrosc.github.io/Sessao/
 
 ## Como os dados chegam aqui
 
