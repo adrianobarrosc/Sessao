@@ -44,7 +44,8 @@ jobs:
       - name: Preparar site
         run: |
           mkdir -p _site
-          cp index.html data.json _site/
+          cp index.html data.json manifest.webmanifest sw.js _site/
+          cp -r icons _site/
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:

@@ -5,6 +5,10 @@ Escolha a mídia e o gênero e veja as opções, com ficha completa e títulos r
 
 **Site:** https://adrianobarrosc.github.io/Sessao/
 
+## Instalar como app (Android, tablet, computador)
+
+O site é um app instalável (PWA): abra o endereço no Chrome ou no Samsung Internet e toque em **⬇ Instalar app** (no topo da página) ou, no menu do navegador, em **Instalar app / Adicionar à tela inicial**. O app abre em tela cheia, funciona sem internet com a última cópia dos dados e se atualiza sozinho.
+
 ## Como os dados chegam aqui
 
 - O arquivo `data.json` é uma cópia das páginas **Filmes**, **Streaming**, **Leitura** e **Games** do Notion.
