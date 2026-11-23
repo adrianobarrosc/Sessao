@@ -131,6 +131,7 @@ h1 { font: 800 clamp(40px, 6vw, 64px)/.92 var(--display); margin: 0; letter-spac
 .prov { display: inline-flex; align-items: center; gap: 8px; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 5px 12px 5px 5px; font-size: 14px; font-weight: 500; }
 .prov img { width: 28px; height: 28px; border-radius: 6px; display: block; }
 .attr { font-size: 11.5px; color: var(--muted); margin: 0; max-width: 60ch; }
+.attr a { color: var(--accent); }
 
 /* painel de detalhes */
 #detail { position: fixed; inset: 0; z-index: 20; }
@@ -817,10 +818,14 @@ function renderDetail() {
       : fresh.extSummary ? `<div class="d-syn ext">${fresh.extSummary.text.split('\n').filter(Boolean).slice(0, 6).map(p => `<p>${esc(p)}</p>`).join('')}<p class="attr">Resumo: ${esc(fresh.extSummary.source)}${fresh.extSummary.lang === 'en' ? ' (em inglês)' : ''}</p></div>` : ''}
     <dl class="facts">
       ${fresh.fields.map(([k, v]) => `<div><dt>${esc(k)}</dt><dd>${esc(v)}</dd></div>`).join('')}
+      ${fresh.game?.rating ? `<div><dt>Nota na RAWG</dt><dd>★ ${fresh.game.rating.toFixed(1).replace('.', ',')} de 5</dd></div>` : ''}
+      ${fresh.game?.metacritic ? `<div><dt>Metacritic</dt><dd>${fresh.game.metacritic}</dd></div>` : ''}
+      ${fresh.game?.released ? `<div><dt>Lançamento</dt><dd>${new Date(fresh.game.released + 'T12:00:00').toLocaleDateString('pt-BR')}</dd></div>` : ''}
       ${fresh.tmdb?.rating ? `<div><dt>Nota no TMDB</dt><dd>★ ${fresh.tmdb.rating.toFixed(1).replace('.', ',')}</dd></div>` : ''}
       <div><dt>No Notion</dt><dd>${esc(fresh.lists.join(' · '))}</dd></div>
     </dl>
     ${watchHTML(fresh)}
+    ${fresh.game?.url ? `<p class="attr">Imagem, nota e resumo do jogo: <a href="${esc(fresh.game.url)}" target="_blank" rel="noopener">RAWG ↗</a></p>` : ''}
     <a class="btn ghost notion" href="${esc(fresh.url)}" target="_blank" rel="noopener">Abrir a página ${esc(m.label)} no Notion ↗</a>
     <section><h3>${{ filmes: 'Mais filmes parecidos', streaming: 'Mais séries parecidas', leitura: 'Mais leituras parecidas', games: 'Mais jogos parecidos' }[fresh.media]}</h3>${relList(rel.same)}</section>
     <section><h3>Em outras mídias</h3>${relList(rel.other)}</section>`;

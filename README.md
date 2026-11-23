@@ -19,7 +19,7 @@ Os dados vêm da JustWatch, via API do TMDB, e são buscados pela mesma automaç
 ## Capas e resumos de livros e jogos
 
 - **Livros:** capa e resumo pelo Google Books (com a Open Library como reserva de capa). O resumo só aparece quando o Notion não tem sinopse.
-- **Jogos:** capa e resumo pelo IGDB (Twitch). Os resumos do IGDB estão em inglês.
+- **Jogos:** imagem, resumo, nota, Metacritic e data de lançamento pela RAWG (secret `RAWG_KEY`; plano gratuito, uso não comercial, com link para a RAWG em cada ficha). Os resumos da RAWG estão em inglês. O IGDB continua disponível como alternativa (secrets `TWITCH_CLIENT_ID` e `TWITCH_CLIENT_SECRET`).
 - Títulos já encontrados são reaproveitados; só os novos são consultados a cada dia.
 
 ## Conversa com o Claude

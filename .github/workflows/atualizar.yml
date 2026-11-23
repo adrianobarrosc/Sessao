@@ -25,16 +25,17 @@ jobs:
       GOOGLE_BOOKS_KEY: ${{ secrets.GOOGLE_BOOKS_KEY }}
       TWITCH_CLIENT_ID: ${{ secrets.TWITCH_CLIENT_ID }}
       TWITCH_CLIENT_SECRET: ${{ secrets.TWITCH_CLIENT_SECRET }}
+      RAWG_KEY: ${{ secrets.RAWG_KEY }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 20
-      - name: Ler Notion, TMDB, Google Books e IGDB e gerar data.json
-        if: ${{ env.NOTION_TOKEN != '' || env.TMDB_TOKEN != '' || env.GOOGLE_BOOKS_KEY != '' || env.TWITCH_CLIENT_ID != '' }}
+      - name: Ler Notion, TMDB, Google Books e RAWG e gerar data.json
+        if: ${{ env.NOTION_TOKEN != '' || env.TMDB_TOKEN != '' || env.GOOGLE_BOOKS_KEY != '' || env.TWITCH_CLIENT_ID != '' || env.RAWG_KEY != '' }}
         run: node scripts/build-data.mjs
       - name: Salvar data.json no repositório
-        if: ${{ env.NOTION_TOKEN != '' || env.TMDB_TOKEN != '' || env.GOOGLE_BOOKS_KEY != '' || env.TWITCH_CLIENT_ID != '' }}
+        if: ${{ env.NOTION_TOKEN != '' || env.TMDB_TOKEN != '' || env.GOOGLE_BOOKS_KEY != '' || env.TWITCH_CLIENT_ID != '' || env.RAWG_KEY != '' }}
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"

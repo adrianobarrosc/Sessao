@@ -130,3 +130,46 @@ export async function enrichGames(items, previousItems, clientId, clientSecret) 
   }
   console.log(`Jogos: ${todo.length} consultados agora, ${ok} com capa nova`);
 }
+
+// ---------- Jogos via RAWG ----------
+// Plano gratuito: uso não comercial, até 20 mil requisições/mês e link de volta para a RAWG nas páginas que usam os dados.
+export async function enrichGamesRawg(items, previousItems, key) {
+  const prev = new Map((previousItems || []).filter(i => i.visual?.v === VERSION && i.visual?.source === 'RAWG').map(i => [norm(i.title), i]));
+  const todo = [];
+  for (const it of items) {
+    const p = prev.get(norm(it.title));
+    if (p) { it.visual = p.visual; it.game = p.game; if (p.extSummary && !it.synopsis) it.extSummary = p.extSummary; }
+    else todo.push(it);
+  }
+  let ok = 0, calls = 0;
+  for (const it of todo) {
+    try {
+      const yearM = it.title.match(/\((\d{4})\)/);
+      const name = it.title.replace(/\([^)]*\)/g, '').replace(/™|®|©/g, '').replace(/[’']/g, "'").trim();
+      const want = norm(name);
+      const r = await getJson(`https://api.rawg.io/api/games?key=${key}&search=${encodeURIComponent(name)}&page_size=10`, {}, 3); calls++;
+      let best = null, bestScore = -Infinity;
+      for (const g of r.results || []) {
+        const n = norm(g.name);
+        let sc = n === want ? 10 : (n.startsWith(want) || want.startsWith(n)) ? 5 : n.includes(want) ? 2 : 0;
+        if (yearM && g.released) sc += g.released.startsWith(yearM[1]) ? 4 : -2;
+        if (g.background_image) sc += 2;
+        sc += Math.log10((g.ratings_count || g.added || 0) + 1);
+        if (sc > bestScore) { best = g; bestScore = sc; }
+      }
+      if (!best || bestScore < 7) { it.visual = { v: VERSION, cover: null, source: 'RAWG' }; continue; }
+      const d = await getJson(`https://api.rawg.io/api/games/${best.id}?key=${key}`, {}, 3); calls++;
+      const img = d.background_image || best.background_image;
+      it.visual = { v: VERSION, cover: img ? img.replace('/media/', '/media/resize/640/-/') : null, source: 'RAWG', name: d.name };
+      it.game = {
+        rating: d.rating || null, metacritic: d.metacritic || null, released: d.released || null,
+        platforms: (d.platforms || []).map(p => p.platform?.name).filter(Boolean),
+        url: `https://rawg.io/games/${d.slug}`,
+      };
+      if (!it.synopsis && d.description_raw) it.extSummary = { text: d.description_raw.trim(), source: 'RAWG', lang: 'en' };
+      if (img) ok++;
+    } catch (e) { console.error(`RAWG: ${it.title}: ${e.message}`); }
+    await sleep(250);
+  }
+  console.log(`RAWG: ${todo.length} jogos consultados agora (${calls} requisições), ${ok} com imagem nova`);
+}
