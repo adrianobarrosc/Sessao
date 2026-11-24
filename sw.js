@@ -1,5 +1,5 @@
 // Sessão: funciona sem internet com a última cópia da página, dos dados e das imagens já vistas.
-const VERSION = 'sessao-v1';
+const VERSION = 'sessao-v2';
 const SHELL = ['./', './index.html', './manifest.webmanifest', './icons/icon-192.png', './icons/icon-512.png'];
 
 self.addEventListener('install', e => {

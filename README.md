@@ -1,4 +1,4 @@
-# Sessão · O que consumir hoje?
+# Sessão de Entretenimento - Adriano
 
 Consulta rápida do meu catálogo pessoal de **filmes, séries, leituras e jogos**, que fica no Notion.
 Escolha a mídia e o gênero e veja as opções, com ficha completa e títulos relacionados.
