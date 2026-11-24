@@ -23,8 +23,14 @@ Os dados vêm da JustWatch, via API do TMDB, e são buscados pela mesma automaç
 ## Capas e resumos de livros e jogos
 
 - **Livros:** capa e resumo pelo Google Books (com a Open Library como reserva de capa). O resumo só aparece quando o Notion não tem sinopse.
-- **Jogos:** imagem, resumo, nota, Metacritic e data de lançamento pela RAWG (secret `RAWG_KEY`; plano gratuito, uso não comercial, com link para a RAWG em cada ficha). Os resumos da RAWG estão em inglês. O IGDB continua disponível como alternativa (secrets `TWITCH_CLIENT_ID` e `TWITCH_CLIENT_SECRET`).
+- **Jogos:** imagem, resumo, nota, Metacritic e data de lançamento pela RAWG (secret `RAWG_KEY`; plano gratuito, uso não comercial, com link para a RAWG em cada ficha). Os resumos da RAWG vêm em inglês e aparecem no site traduzidos para o português (veja abaixo). O IGDB continua disponível como alternativa (secrets `TWITCH_CLIENT_ID` e `TWITCH_CLIENT_SECRET`).
 - Títulos já encontrados são reaproveitados; só os novos são consultados a cada dia.
+
+## Tradução dos resumos de jogos
+
+- As traduções ficam em `traducoes/jogos.json` (uma por jogo, com um código do texto original). A automação diária aplica a tradução sempre que o resumo da RAWG não mudou.
+- Jogo novo, ou resumo que mudou, aparece em inglês até ser traduzido. Uma tarefa agendada do Claude roda todo dia depois da atualização: lista os pendentes com `node scripts/traducao-pendentes.mjs pendentes.json`, traduz e grava com `node scripts/traducao-salvar.mjs traduzidos.json` (formato `[{"titulo","hash","pt"}]`).
+- Para corrigir uma tradução, edite o texto `pt` em `traducoes/jogos.json`.
 
 ## Conversa com o Claude
 

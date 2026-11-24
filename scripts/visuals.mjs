@@ -138,7 +138,7 @@ export async function enrichGamesRawg(items, previousItems, key) {
   const todo = [];
   for (const it of items) {
     const p = prev.get(norm(it.title));
-    if (p) { it.visual = p.visual; it.game = p.game; if (p.extSummary && !it.synopsis) it.extSummary = p.extSummary; }
+    if (p) { it.visual = p.visual; it.game = p.game; if (p.extSummary && !it.synopsis) it.extSummary = p.extSummary.original ? { text: p.extSummary.original, source: p.extSummary.source, lang: 'en' } : p.extSummary; }
     else todo.push(it);
   }
   let ok = 0, calls = 0;

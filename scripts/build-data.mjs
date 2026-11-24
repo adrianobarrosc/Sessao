@@ -7,6 +7,7 @@ const { parsePage, SOURCES } = require('./parser.cjs');
 
 import { enrichWithTmdb } from './tmdb.mjs';
 import { enrichBooks, enrichGames, enrichGamesRawg } from './visuals.mjs';
+import { aplicarTraducoes } from './traducoes.mjs';
 const TOKEN = process.env.NOTION_TOKEN;
 const TMDB = process.env.TMDB_TOKEN;
 const GBOOKS = process.env.GOOGLE_BOOKS_KEY;
@@ -104,6 +105,7 @@ if (RAWG && out.sources.games?.items) {
   try { await enrichGames(out.sources.games.items, previous.sources?.games?.items, TW_ID, TW_SECRET); }
   catch (e) { console.error('Jogos: ' + e.message); }
 }
+aplicarTraducoes(out.sources.games?.items);
 if (!TOKEN) out.generatedAt = previous.generatedAt || out.generatedAt;
 writeFileSync('data.json', JSON.stringify(out));
 if (TOKEN && failures === SOURCES.length) process.exit(1);

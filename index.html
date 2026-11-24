@@ -820,7 +820,7 @@ function renderDetail() {
       <div class="tags">${fresh.genres.map(g => `<button class="tag act" data-genre-pick="${esc(g)}" title="Filtrar por ${esc(g)}">${esc(g)}</button>`).join('')}</div>
     </div>
     ${fresh.synopsis ? `<p class="d-syn">${esc(fresh.synopsis)}</p>`
-      : fresh.extSummary ? `<div class="d-syn ext">${fresh.extSummary.text.split('\n').filter(Boolean).slice(0, 6).map(p => `<p>${esc(p)}</p>`).join('')}<p class="attr">Resumo: ${esc(fresh.extSummary.source)}${fresh.extSummary.lang === 'en' ? ' (em inglês)' : ''}</p></div>` : ''}
+      : fresh.extSummary ? `<div class="d-syn ext">${fresh.extSummary.text.split('\n').filter(Boolean).slice(0, 6).map(p => `<p>${esc(p)}</p>`).join('')}<p class="attr">Resumo: ${esc(fresh.extSummary.source)}${fresh.extSummary.traduzido ? ' · traduzido para o português' : fresh.extSummary.lang === 'en' ? ' (em inglês)' : ''}</p></div>` : ''}
     <dl class="facts">
       ${fresh.fields.map(([k, v]) => `<div><dt>${esc(k)}</dt><dd>${esc(v)}</dd></div>`).join('')}
       ${fresh.game?.rating ? `<div><dt>Nota na RAWG</dt><dd>★ ${fresh.game.rating.toFixed(1).replace('.', ',')} de 5</dd></div>` : ''}
