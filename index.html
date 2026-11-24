@@ -154,6 +154,11 @@ h1 { font: 800 clamp(40px, 6vw, 64px)/.92 var(--display); margin: 0; letter-spac
 .d-syn { font-size: 16px; max-width: 62ch; }
 .d-syn.ext p { margin: 0 0 10px; }
 .d-syn.ext .attr { margin-top: 4px; }
+.d-syn.duplo { display: grid; gap: 14px; }
+.syn-bloco h3 { font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin: 0 0 6px; font-weight: 700; }
+.syn-bloco h3 span { text-transform: none; letter-spacing: 0; color: var(--accent); }
+.syn-bloco p { margin: 0 0 8px; }
+.syn-bloco.atual { border-left: 3px solid var(--accent); padding-left: 12px; }
 .facts { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 1px; background: var(--line); border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; }
 .facts div { background: var(--surface); padding: 10px 14px; }
 .facts dt { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); }
@@ -802,6 +807,22 @@ function renderResults() {
   const clear = $('#clear'); if (clear) clear.onclick = () => { S.genres = []; S.where = ''; S.q = ''; $('#q').value = ''; savePrefs(); renderAll(); };
 }
 
+
+// Séries em "Temporada Adiantada": sinopse geral (TMDB) + resumo da temporada atual (Notion).
+function duplo(it) {
+  if (it.media !== 'streaming' || !(it.path || []).some(p => /temporada adiantada/i.test(p))) return '';
+  const temp = (it.fields.find(([k]) => /temporada atual/i.test(k)) || [])[1] || '';
+  const ov = it.tmdb?.overview || '';
+  const geral = ov
+    ? `<section class="syn-bloco"><h3>Sinopse da série</h3>${ov.split('\n').filter(Boolean).map(p => `<p>${esc(p)}</p>`).join('')}<p class="attr">Sinopse: TMDB${it.tmdb.overviewTraduzido ? ' · traduzida para o português' : it.tmdb.overviewLang === 'en' ? ' (em inglês)' : ''}</p></section>`
+    : '';
+  const tempTxt = (it.synopsis || '').replace(/^\s*\d+\s*[ªºa]?\s*temporada\s*[:–-]\s*/i, '').replace(/^./, c => c.toUpperCase());
+  const atual = tempTxt
+    ? `<section class="syn-bloco atual"><h3>Temporada onde eu estou${temp ? ` <span>· ${esc(/temporada/i.test(temp) ? temp : temp + ' temporada')}</span>` : ''}</h3><p>${esc(tempTxt)}</p></section>`
+    : '';
+  return geral || atual ? `<div class="d-syn duplo">${geral}${atual}</div>` : '';
+}
+
 function renderDetail() {
   const panel = $('#detail');
   const it = S.open[S.open.length - 1];
@@ -819,8 +840,8 @@ function renderDetail() {
       ${fresh.original ? `<p class="orig">${esc(fresh.original)}</p>` : ''}
       <div class="tags">${fresh.genres.map(g => `<button class="tag act" data-genre-pick="${esc(g)}" title="Filtrar por ${esc(g)}">${esc(g)}</button>`).join('')}</div>
     </div>
-    ${fresh.synopsis ? `<p class="d-syn">${esc(fresh.synopsis)}</p>`
-      : fresh.extSummary ? `<div class="d-syn ext">${fresh.extSummary.text.split('\n').filter(Boolean).slice(0, 6).map(p => `<p>${esc(p)}</p>`).join('')}<p class="attr">Resumo: ${esc(fresh.extSummary.source)}${fresh.extSummary.traduzido ? ' · traduzido para o português' : fresh.extSummary.lang === 'en' ? ' (em inglês)' : ''}</p></div>` : ''}
+    ${duplo(fresh) || (fresh.synopsis ? `<p class="d-syn">${esc(fresh.synopsis)}</p>`
+      : fresh.extSummary ? `<div class="d-syn ext">${fresh.extSummary.text.split('\n').filter(Boolean).slice(0, 6).map(p => `<p>${esc(p)}</p>`).join('')}<p class="attr">Resumo: ${esc(fresh.extSummary.source)}${fresh.extSummary.traduzido ? ' · traduzido para o português' : fresh.extSummary.lang === 'en' ? ' (em inglês)' : ''}</p></div>` : '')}
     <dl class="facts">
       ${fresh.fields.map(([k, v]) => `<div><dt>${esc(k)}</dt><dd>${esc(v)}</dd></div>`).join('')}
       ${fresh.game?.rating ? `<div><dt>Nota na RAWG</dt><dd>★ ${fresh.game.rating.toFixed(1).replace('.', ',')} de 5</dd></div>` : ''}
