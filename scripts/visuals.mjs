@@ -222,3 +222,12 @@ export async function enrichGamesRawg(items, previousItems, key) {
   }
   console.log(`RAWG: ${todo.length} jogos consultados agora (${calls} requisições), ${ok} com imagem nova`);
 }
+
+// Capas de jogos escolhidas à mão: têm prioridade sobre a RAWG/IGDB.
+export function aplicarCapasManuaisJogos(items) {
+  let manuais = {};
+  try { manuais = JSON.parse(readFileSync(new URL('./capas-manuais-jogos.json', import.meta.url), 'utf8')); } catch {}
+  let m = 0;
+  for (const it of items || []) if (manuais[it.title] && !it.title.startsWith('_')) { it.visual = { ...(it.visual || {}), v: it.visual?.v || VERSION, cover: manuais[it.title], source: it.visual?.source || 'manual', coverManual: true }; m++; }
+  if (m) console.log(`Jogos: ${m} capas definidas manualmente`);
+}

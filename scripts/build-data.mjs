@@ -6,7 +6,7 @@ const require = createRequire(import.meta.url);
 const { parsePage, SOURCES } = require('./parser.cjs');
 
 import { enrichWithTmdb } from './tmdb.mjs';
-import { enrichBooks, enrichGames, enrichGamesRawg } from './visuals.mjs';
+import { enrichBooks, enrichGames, enrichGamesRawg, aplicarCapasManuaisJogos } from './visuals.mjs';
 import { aplicarTraducoes, aplicarTraducoesSeries } from './traducoes.mjs';
 const TOKEN = process.env.NOTION_TOKEN;
 const TMDB = process.env.TMDB_TOKEN;
@@ -105,6 +105,7 @@ if (RAWG && out.sources.games?.items) {
   try { await enrichGames(out.sources.games.items, previous.sources?.games?.items, TW_ID, TW_SECRET); }
   catch (e) { console.error('Jogos: ' + e.message); }
 }
+aplicarCapasManuaisJogos(out.sources.games?.items);
 aplicarTraducoes(out.sources.games?.items);
 aplicarTraducoesSeries(out.sources.streaming?.items);
 if (!TOKEN) out.generatedAt = previous.generatedAt || out.generatedAt;
