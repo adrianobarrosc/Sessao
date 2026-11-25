@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';
 // Capas e resumos de livros (Google Books + Open Library) e jogos (IGDB).
 // Só consulta títulos ainda sem dados: o que já foi encontrado é reaproveitado da cópia anterior.
 const sleep = ms => new Promise(r => setTimeout(r, ms));
@@ -31,14 +32,14 @@ const firstAuthor = a => (a || '').replace(/\([^)]*\)/g, '').split(/;|,| e | and
 const cleanTitle = t => t.replace(/\([^)]*\)/g, '').replace(/^(trilogia|saga|série)\s+/i, '').trim();
 
 let googleDown = false;
-async function googleBook(it, key) {
+async function googleBook(it, key, altTitle) {
   if (googleDown) return null;
-  const title = cleanTitle(it.title), author = firstAuthor(it.creator);
+  const title = altTitle || cleanTitle(it.title), author = firstAuthor(it.creator).replace(/\s*&.*$/, '');
   const tries = [
     `intitle:"${title}"${author ? ` inauthor:"${author}"` : ''}`,
     `${title} ${author}`.trim(),
   ];
-  let best = null, bestScore = -Infinity;
+  let best = null, bestScore = -Infinity, bestImg = null, bestImgScore = -Infinity;
   for (const q of tries) {
     for (const lang of ['pt', '']) {
       const url = `https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(q)}&maxResults=10&printType=books${lang ? '&langRestrict=' + lang : ''}${key ? '&key=' + key : ''}`;
@@ -55,17 +56,21 @@ async function googleBook(it, key) {
         if (vi.language === 'pt' || vi.language === 'pt-BR') sc += 2;
         if (vi.description) sc += 1;
         if (sc > bestScore) { best = vi; bestScore = sc; }
+        // uma edição que bate com o título e tem imagem vale mais que uma sem imagem
+        if (vi.imageLinks?.thumbnail && sc >= 10 && (!bestImg || sc > bestImgScore)) { bestImg = vi; bestImgScore = sc; }
       }
       await sleep(250);
-      if (bestScore >= 19) break;
+      if (bestImgScore >= 19) break;
     }
-    if (bestScore >= 15) break;
+    if (bestImgScore >= 15) break;
   }
+  if (bestImg) return bestImg;
   return bestScore >= 10 ? best : null;
 }
 
-async function openLibraryCover(it) {
-  const url = `https://openlibrary.org/search.json?title=${encodeURIComponent(cleanTitle(it.title))}${firstAuthor(it.creator) ? '&author=' + encodeURIComponent(firstAuthor(it.creator)) : ''}&limit=5&fields=title,cover_i`;
+async function openLibraryCover(it, altTitle) {
+  const author = firstAuthor(it.creator).replace(/\s*&.*$/, '');
+  const url = `https://openlibrary.org/search.json?title=${encodeURIComponent(altTitle || cleanTitle(it.title))}${author ? '&author=' + encodeURIComponent(author) : ''}&limit=5&fields=title,cover_i`;
   const j = await getJson(url, { headers: { 'User-Agent': 'Sessao/1.0 (github.com/adrianobarrosc/Sessao)' } }, 2);
   const hit = (j.docs || []).find(d => d.cover_i);
   await sleep(400);
@@ -92,6 +97,36 @@ export async function enrichBooks(items, previousItems, key) {
     } catch (e) { console.error(`Livros: ${it.title}: ${e.message}`); }
   }
   console.log(`Livros: ${todo.length} consultados agora, ${ok} com capa nova`);
+  await retryCovers(items, key);
+}
+
+// Nova busca, uma única vez, para livros que ficaram sem capa: edições com imagem e títulos originais.
+const RETRY = 2;
+async function retryCovers(items, key) {
+  let alts = {};
+  try { alts = JSON.parse(readFileSync(new URL('./capas-alternativas.json', import.meta.url), 'utf8')); } catch {}
+  const sem = items.filter(it => it.visual && !it.visual.cover && (it.visual.retry || 0) < RETRY);
+  let ok = 0;
+  for (const it of sem) {
+    const titulos = [null, ...(alts[it.title] || [])];
+    let cover = null, vi = null;
+    for (const t of titulos) {
+      try {
+        const v = await googleBook(it, key, t);
+        const th = v?.imageLinks?.thumbnail || v?.imageLinks?.smallThumbnail;
+        if (th) { cover = th.replace('http:', 'https:').replace('&edge=curl', '') + '&fife=w480-h720'; vi = v; break; }
+      } catch {}
+    }
+    if (!cover) for (const t of titulos) {
+      try { cover = await openLibraryCover(it, t); } catch {}
+      if (cover) break;
+    }
+    if (googleDown && !cover) continue; // Google fora do ar: tenta de novo na próxima execução
+    it.visual = { ...it.visual, retry: RETRY, cover, source: cover ? (cover.includes('openlibrary') ? 'Open Library' : 'Google Books') : null };
+    if (!it.synopsis && !it.extSummary && vi?.description && /^pt/.test(vi.language || '')) it.extSummary = { text: stripHtml(vi.description), source: 'Google Books', lang: vi.language || '' };
+    if (cover) { ok++; console.log(`  capa encontrada: ${it.title}`); } else console.log(`  ainda sem capa: ${it.title}`);
+  }
+  if (sem.length) console.log(`Livros sem capa: ${sem.length} procurados de novo, ${ok} encontrados`);
 }
 
 // ---------- Jogos ----------
