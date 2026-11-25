@@ -105,6 +105,8 @@ const RETRY = 2;
 async function retryCovers(items, key) {
   let alts = {};
   try { alts = JSON.parse(readFileSync(new URL('./capas-alternativas.json', import.meta.url), 'utf8')); } catch {}
+  const refazer = new Set(alts._refazer || []);
+  for (const it of items) if (refazer.has(it.title) && it.visual && (it.visual.retry || 0) < RETRY + 1) it.visual = { ...it.visual, cover: null, source: null, retry: RETRY - 1, refazer: true };
   const sem = items.filter(it => it.visual && !it.visual.cover && (it.visual.retry || 0) < RETRY);
   let ok = 0;
   for (const it of sem) {
@@ -113,6 +115,10 @@ async function retryCovers(items, key) {
     for (const t of titulos) {
       try {
         const v = await googleBook(it, key, t);
+        // na nova busca só aceita a edição se todas as palavras do título procurado estiverem no título encontrado
+        const palavras = norm(t || cleanTitle(it.title)).split(' ').filter(w => w.length > 2 && !['the', 'and', 'das', 'dos', 'para', 'com'].includes(w));
+        const achado = norm(`${v?.title || ''} ${v?.subtitle || ''} ${v?.seriesInfo?.shortSeriesBookTitle || ''}`);
+        if (v && it.visual.refazer && !palavras.every(w => achado.split(' ').includes(w))) continue;
         const th = v?.imageLinks?.thumbnail || v?.imageLinks?.smallThumbnail;
         if (th) { cover = th.replace('http:', 'https:').replace('&edge=curl', '') + '&fife=w480-h720'; vi = v; break; }
       } catch {}
@@ -122,7 +128,9 @@ async function retryCovers(items, key) {
       if (cover) break;
     }
     if (googleDown && !cover) continue; // Google fora do ar: tenta de novo na próxima execução
-    it.visual = { ...it.visual, retry: RETRY, cover, source: cover ? (cover.includes('openlibrary') ? 'Open Library' : 'Google Books') : null };
+    if (it.visual.refazer) { delete it.visual.refazer; it.visual.retry = RETRY + 1; }
+    else it.visual.retry = RETRY;
+    it.visual = { ...it.visual, cover, source: cover ? (cover.includes('openlibrary') ? 'Open Library' : 'Google Books') : null };
     if (!it.synopsis && !it.extSummary && vi?.description && /^pt/.test(vi.language || '')) it.extSummary = { text: stripHtml(vi.description), source: 'Google Books', lang: vi.language || '' };
     if (cover) { ok++; console.log(`  capa encontrada: ${it.title}`); } else console.log(`  ainda sem capa: ${it.title}`);
   }

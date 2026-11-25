@@ -1,39 +1,135 @@
 {
- "_comentario": "Títulos alternativos (originais) usados só para procurar capas de livros que ficaram sem imagem. Chave = título no Notion.",
- "A Quinta Estação": ["The Fifth Season"],
- "Alta Fidelidade": ["High Fidelity"],
- "Bom Dia, Verônica": ["Bom dia, Verônica Raphael Montes"],
- "Expiração": ["Exhalation", "Expiração e outras histórias"],
- "Perdido em Marte": ["The Martian"],
- "21 Lições para o Século XXI": ["21 Lessons for the 21st Century"],
- "Data Science do Zero": ["Data Science from Scratch"],
- "Sociedade em Rede": ["A Sociedade em Rede", "The Rise of the Network Society"],
- "A Fé e o Fuzil: Crime e Religião no Brasil do Século XXI": ["A Fé e o Fuzil"],
- "O Dia D: 6 de Junho de 1944": ["O Dia D", "D-Day June 6, 1944"],
- "Diante da Dor dos Outros": ["Regarding the Pain of Others"],
- "O Menino que Sobreviveu": ["O menino que sobreviveu Holmes"],
- "Suma Teológica": ["Summa Theologiae", "Summa Theologica"],
- "A Bola Não Entra por Acaso": ["La pelota no entra por azar", "Goal: The Ball Doesn't Go In By Chance"],
- "Náutico – A Bola e as Lembranças": ["Náutico a bola e as lembranças"],
- "Os Números do Jogo": ["The Numbers Game"],
- "A Cultura da Experimentação": ["Experimentation Works"],
- "A Meta": ["The Goal"],
- "Criatividade S.A.": ["Creativity, Inc."],
- "Alvo Humano (série de 12 edições)": ["Human Target Tom King", "Human Target"],
- "Asa Noturna – fase Tom Taylor (Salto de Fé e seguintes)": ["Nightwing Leaping into the Light", "Asa Noturna Salto de Fé"],
- "Aves de Rapina (2023)": ["Birds of Prey Megadeath", "Birds of Prey Kelly Thompson"],
- "Dias Frios (Batman #51–53)": ["Batman Cold Days", "Batman Dias Frios"],
- "Caçador de Marte Absoluto": ["Absolute Martian Manhunter"],
- "Lanterna Verde: Origem Secreta": ["Green Lantern Secret Origin"],
- "Superman: As Quatro Estações": ["Superman for All Seasons"],
- "Guerras Secretas (original)": ["Marvel Super Heroes Secret Wars", "Secret Wars Jim Shooter"],
- "Justiceiro: No Princípio (Justiceiro MAX)": ["Punisher MAX In the Beginning", "Punisher In the Beginning"],
- "Justiceiro: Mãe Rússia": ["Punisher MAX Mother Russia", "Punisher Mother Russia"],
- "Chico Bento: Pavor Espaciar": ["Pavor Espaciar"],
- "Bidu: Caminhos": ["Bidu Caminhos Graphic MSP"],
- "Turma da Mônica: Lições": ["Turma da Mônica Lições Graphic MSP"],
- "Mônica: Força": ["Mônica Força Graphic MSP"],
- "Chico Bento: Arvorada": ["Chico Bento Arvorada Graphic MSP"],
- "Power Rangers: Alma do Dragão": ["Power Rangers Soul of the Dragon"],
- "Verões Felizes – Rumo ao Sul": ["Les Beaux Étés Cap au Sud", "Verões Felizes"]
+ "_comentario": "Títulos alternativos (originais) usados só para procurar capas de livros que ficaram sem imagem. Chave = título no Notion. _refazer: títulos cuja capa deve ser procurada de novo (com conferência rígida do título); a lista é usada uma única vez por título.",
+ "A Quinta Estação": [
+  "The Fifth Season"
+ ],
+ "Alta Fidelidade": [
+  "High Fidelity"
+ ],
+ "Bom Dia, Verônica": [
+  "Bom dia, Verônica Raphael Montes"
+ ],
+ "Expiração": [
+  "Exhalation",
+  "Expiração e outras histórias"
+ ],
+ "Perdido em Marte": [
+  "The Martian"
+ ],
+ "21 Lições para o Século XXI": [
+  "21 Lessons for the 21st Century"
+ ],
+ "Data Science do Zero": [
+  "Data Science from Scratch"
+ ],
+ "Sociedade em Rede": [
+  "A Sociedade em Rede",
+  "The Rise of the Network Society"
+ ],
+ "A Fé e o Fuzil: Crime e Religião no Brasil do Século XXI": [
+  "A Fé e o Fuzil"
+ ],
+ "O Dia D: 6 de Junho de 1944": [
+  "O Dia D",
+  "D-Day June 6, 1944"
+ ],
+ "Diante da Dor dos Outros": [
+  "Regarding the Pain of Others"
+ ],
+ "O Menino que Sobreviveu": [
+  "O menino que sobreviveu Holmes"
+ ],
+ "Suma Teológica": [
+  "Summa Theologiae",
+  "Summa Theologica"
+ ],
+ "A Bola Não Entra por Acaso": [
+  "La pelota no entra por azar",
+  "Goal: The Ball Doesn't Go In By Chance"
+ ],
+ "Náutico – A Bola e as Lembranças": [
+  "Náutico a bola e as lembranças"
+ ],
+ "Os Números do Jogo": [
+  "The Numbers Game"
+ ],
+ "A Cultura da Experimentação": [
+  "Experimentation Works"
+ ],
+ "A Meta": [
+  "The Goal"
+ ],
+ "Criatividade S.A.": [
+  "Creativity, Inc."
+ ],
+ "Alvo Humano (série de 12 edições)": [
+  "Human Target Tom King",
+  "Human Target"
+ ],
+ "Asa Noturna – fase Tom Taylor (Salto de Fé e seguintes)": [
+  "Nightwing Leaping into the Light",
+  "Asa Noturna Salto de Fé"
+ ],
+ "Aves de Rapina (2023)": [
+  "Birds of Prey Megadeath",
+  "Birds of Prey Kelly Thompson"
+ ],
+ "Dias Frios (Batman #51–53)": [
+  "Batman Cold Days",
+  "Batman Dias Frios"
+ ],
+ "Caçador de Marte Absoluto": [
+  "Absolute Martian Manhunter"
+ ],
+ "Lanterna Verde: Origem Secreta": [
+  "Green Lantern Secret Origin"
+ ],
+ "Superman: As Quatro Estações": [
+  "Superman for All Seasons"
+ ],
+ "Guerras Secretas (original)": [
+  "Marvel Super Heroes Secret Wars",
+  "Secret Wars Jim Shooter"
+ ],
+ "Justiceiro: No Princípio (Justiceiro MAX)": [
+  "Punisher MAX In the Beginning",
+  "Punisher In the Beginning"
+ ],
+ "Justiceiro: Mãe Rússia": [
+  "Justiceiro Mãe Rússia",
+  "Punisher Mother Russia"
+ ],
+ "Chico Bento: Pavor Espaciar": [
+  "Chico Bento Pavor Espaciar",
+  "Pavor Espaciar"
+ ],
+ "Bidu: Caminhos": [
+  "Bidu Caminhos"
+ ],
+ "Turma da Mônica: Lições": [
+  "Turma da Mônica Lições"
+ ],
+ "Mônica: Força": [
+  "Mônica Força"
+ ],
+ "Chico Bento: Arvorada": [
+  "Chico Bento Arvorada",
+  "Arvorada"
+ ],
+ "Power Rangers: Alma do Dragão": [
+  "Power Rangers Soul of the Dragon"
+ ],
+ "Verões Felizes – Rumo ao Sul": [
+  "Les Beaux Étés Cap au Sud",
+  "Verões Felizes"
+ ],
+ "_refazer": [
+  "Justiceiro: Mãe Rússia",
+  "Chico Bento: Pavor Espaciar",
+  "Turma da Mônica: Lições",
+  "Mônica: Força",
+  "Bidu: Caminhos",
+  "Chico Bento: Arvorada",
+  "Náutico – A Bola e as Lembranças"
+ ]
 }
