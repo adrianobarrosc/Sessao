@@ -80,23 +80,28 @@ export async function enrichWithTmdb(sources, token, previous = {}) {
         }
         const w = await get(`/${kind}/${id}/watch/providers`);
         const br = w.results?.BR;
-        // Séries em "Temporada Adiantada": sinopse geral da série (pt-BR; se não houver, inglês para tradução).
-        let sinopse = {};
-        if (kind === 'tv' && (it.path || []).some(p => /temporada adiantada/i.test(p))) {
-          if (hit?.overview !== undefined) sinopse = hit.overviewOriginal
-            ? { overview: hit.overviewOriginal, overviewLang: 'en' }
-            : { overview: hit.overview, overviewLang: hit.overviewLang };
-          else {
-            const pt = (await get(`/tv/${id}`, { language: 'pt-BR' })).overview?.trim();
-            if (pt) sinopse = { overview: pt, overviewLang: 'pt' };
+        // Séries: total de temporadas e episódios (todas) e sinopse geral (só em "Temporada Adiantada").
+        let sinopse = {}, serie = {};
+        if (kind === 'tv') {
+          const det = await get(`/tv/${id}`, { language: 'pt-BR' });
+          const temporadas = (det.seasons || []).filter(t => t.season_number > 0 && t.episode_count > 0).length || det.number_of_seasons || null;
+          serie = { seasons: temporadas, episodes: det.number_of_episodes || null };
+          if ((it.path || []).some(p => /temporada adiantada/i.test(p))) {
+            if (hit?.overview !== undefined) sinopse = hit.overviewOriginal
+              ? { overview: hit.overviewOriginal, overviewLang: 'en' }
+              : { overview: hit.overview, overviewLang: hit.overviewLang };
             else {
-              const en = (await get(`/tv/${id}`, { language: 'en-US' })).overview?.trim();
-              sinopse = { overview: en || '', overviewLang: en ? 'en' : null };
+              const pt = det.overview?.trim();
+              if (pt) sinopse = { overview: pt, overviewLang: 'pt' };
+              else {
+                const en = (await get(`/tv/${id}`, { language: 'en-US' })).overview?.trim();
+                sinopse = { overview: en || '', overviewLang: en ? 'en' : null };
+              }
             }
           }
         }
         it.tmdb = {
-          ...sinopse,
+          ...sinopse, ...serie,
           v: 2, id, type: kind, poster: info.poster || null, rating: info.rating || null, name: info.name || null,
           watch: br ? { link: br.link, flatrate: mapList(br.flatrate), free: mapList(br.free), ads: mapList(br.ads), rent: mapList(br.rent), buy: mapList(br.buy) } : { link: `https://www.themoviedb.org/${kind}/${id}/watch?locale=BR`, flatrate: [], free: [], ads: [], rent: [], buy: [] },
         };

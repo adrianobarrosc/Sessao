@@ -855,6 +855,8 @@ function renderDetail() {
       ${fresh.game?.rating ? `<div><dt>Nota na RAWG</dt><dd>★ ${fresh.game.rating.toFixed(1).replace('.', ',')} de 5</dd></div>` : ''}
       ${fresh.game?.metacritic ? `<div><dt>Metacritic</dt><dd>${fresh.game.metacritic}</dd></div>` : ''}
       ${fresh.game?.released ? `<div><dt>Lançamento</dt><dd>${new Date(fresh.game.released + 'T12:00:00').toLocaleDateString('pt-BR')}</dd></div>` : ''}
+      ${fresh.tmdb?.seasons ? `<div><dt>Temporadas</dt><dd>${fresh.tmdb.seasons}</dd></div>` : ''}
+      ${fresh.tmdb?.episodes ? `<div><dt>Episódios</dt><dd>${fresh.tmdb.episodes}</dd></div>` : ''}
       ${fresh.tmdb?.rating ? `<div><dt>Nota no TMDB</dt><dd>★ ${fresh.tmdb.rating.toFixed(1).replace('.', ',')}</dd></div>` : ''}
       <div><dt>No Notion</dt><dd>${esc(fresh.lists.join(' · '))}</dd></div>
     </dl>
