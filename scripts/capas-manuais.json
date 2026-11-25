@@ -1,0 +1,9 @@
+{
+ "_comentario": "Capas escolhidas à mão para livros que o Google Books e a Open Library não têm (ou trazem errado). Chave = título no Notion; valor = endereço da imagem.",
+ "Justiceiro: Mãe Rússia": "https://d14d9vp3wdof84.cloudfront.net/image/589816272436/image_lqf25fpor52h384iqmh1qu1k5c/-S897-f.webp",
+ "Chico Bento: Pavor Espaciar": "https://d14d9vp3wdof84.cloudfront.net/image/589816272436/image_vbjkbvq6e50qr1dv54hqgcrf4g/-S897-f.webp",
+ "Turma da Mônica: Lições": "https://skoob.s3.amazonaws.com/livros/409574/TURMA_DA_MNICA_LIES_687460485B.jpg",
+ "Mônica: Força": "https://d14d9vp3wdof84.cloudfront.net/image/589816272436/image_2u3i7lu0mh48pbjdc14pi1c22g/-S897-f.webp",
+ "Bidu: Caminhos": "https://d14d9vp3wdof84.cloudfront.net/image/589816272436/image_t8a034vjad4brcmgad5vdspk1m/-S897-f.webp",
+ "Chico Bento: Arvorada": "https://skoob.s3.amazonaws.com/livros/665879/CHICO_BENTO_ARVORADA_1490286768665879SK1490286769B.jpg"
+}

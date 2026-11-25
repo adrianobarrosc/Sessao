@@ -135,6 +135,12 @@ async function retryCovers(items, key) {
     if (cover) { ok++; console.log(`  capa encontrada: ${it.title}`); } else console.log(`  ainda sem capa: ${it.title}`);
   }
   if (sem.length) console.log(`Livros sem capa: ${sem.length} procurados de novo, ${ok} encontrados`);
+  // capas escolhidas à mão têm prioridade sobre qualquer busca
+  let manuais = {};
+  try { manuais = JSON.parse(readFileSync(new URL('./capas-manuais.json', import.meta.url), 'utf8')); } catch {}
+  let m = 0;
+  for (const it of items) if (manuais[it.title] && !it.title.startsWith('_')) { it.visual = { ...(it.visual || {}), v: it.visual?.v || VERSION, cover: manuais[it.title], source: 'manual' }; m++; }
+  if (m) console.log(`Livros: ${m} capas definidas manualmente`);
 }
 
 // ---------- Jogos ----------
