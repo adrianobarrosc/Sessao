@@ -65,6 +65,10 @@ button { cursor: pointer; }
 .install-bar { display: flex; flex-direction: column; align-items: flex-start; gap: 10px; margin: 14px 0 22px; }
 .install-bar:not(:has(:not([hidden]))) { display: none; }
 #install { padding: 8px 18px; font-size: 14px; font-weight: 700; box-shadow: 0 3px 0 rgba(0,0,0,.35); }
+.install-bar .row-btns { display: flex; flex-wrap: wrap; gap: 10px; }
+#share-app { padding: 8px 18px; font-size: 14px; font-weight: 700; }
+.sheet-bar #share { color: var(--gold, #e8b04b); font-weight: 700; }
+.share-toast { position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%); z-index: 99; background: #1d1a17; color: #fff; border: 1px solid rgba(232,176,75,.5); padding: 10px 16px; border-radius: 12px; font-size: 14px; box-shadow: 0 6px 24px rgba(0,0,0,.4); }
 #install[hidden], .dica-instalar[hidden] { display: none !important; }
 .dica-instalar { margin: 0; max-width: min(440px, 100%); font-size: 13px; color: var(--ink); background: rgba(255,255,255,.06); border: 1px solid rgba(232,176,75,.35); padding: 8px 14px; border-radius: 14px; }
 #notice { margin-top: 14px; border: 1px solid var(--line); border-left: 4px solid var(--filmes); background: var(--surface); border-radius: var(--radius); padding: 10px 14px; display: flex; flex-wrap: wrap; align-items: center; gap: 10px 16px; }
@@ -232,7 +236,10 @@ body.chat-open #chat-fab { display: none; }
     <p class="eyebrow">O que consumir hoje?</p>
     <h1>Sessão de Entretenimento - Adriano</h1>
     <div class="install-bar">
-      <button type="button" class="btn" id="install" hidden>📲 Instalar como app</button>
+      <div class="row-btns">
+        <button type="button" class="btn" id="install" hidden>📲 Instalar como app</button>
+        <button type="button" class="btn ghost" id="share-app">📤 Compartilhar o app</button>
+      </div>
       <p class="dica-instalar" id="dica-instalar" hidden></p>
     </div>
     <div id="media" role="radiogroup" aria-label="Mídia"></div>
@@ -276,7 +283,7 @@ body.chat-open #chat-fab { display: none; }
   <div class="sheet">
     <div class="sheet-bar">
       <button class="link" id="back" hidden>← Voltar</button>
-      <span></span>
+      <button class="link" id="share" title="Enviar esta recomendação (WhatsApp, etc.)">📤 Compartilhar</button>
       <button class="link" id="close">Fechar ✕</button>
     </div>
     <div id="detail-body"></div>
@@ -874,7 +881,54 @@ function renderDetail() {
 function renderAll() {
   buildIdf();
   renderStatus(); renderMedia(); renderGenres(); renderResults(); renderDetail();
+  abrirPendente();
 }
+
+/* ---------- compartilhar ---------- */
+const SITE = 'https://adrianobarrosc.github.io/Sessao/';
+const SHARE_VERB = { filmes: 'Recomendação de filme', streaming: 'Recomendação de série', leitura: 'Recomendação de leitura', games: 'Recomendação de jogo' };
+function toast(msg) {
+  const t = document.createElement('div'); t.className = 'share-toast'; t.textContent = msg;
+  document.body.appendChild(t); setTimeout(() => t.remove(), 3200);
+}
+function cut(s, n) { s = String(s || '').replace(/\s+/g, ' ').trim(); return s.length > n ? s.slice(0, n).replace(/\s+\S*$/, '') + '…' : s; }
+async function compartilhar(title, text, url) {
+  if (navigator.share) {
+    try { await navigator.share({ title, text, url }); return; }
+    catch (e) { if (e && e.name === 'AbortError') return; }
+  }
+  // sem a folha de compartilhamento do sistema: abre o WhatsApp direto
+  const w = window.open('https://wa.me/?text=' + encodeURIComponent(text + '\n' + url), '_blank', 'noopener');
+  if (!w) { try { await navigator.clipboard.writeText(text + '\n' + url); toast('Texto copiado — é só colar no WhatsApp.'); } catch { toast('Não consegui abrir o WhatsApp.'); } }
+}
+function shareItem(it) {
+  const m = MEDIA[it.media];
+  const det = [it.original && it.original !== it.title ? it.original : '', it.year].filter(Boolean).join(', ');
+  const quem = it.creator ? ` — ${it.creator}` : '';
+  const syn = cut(it.synopsis || it.tmdb?.overview || it.extSummary?.text || '', 260);
+  const onde = it.media === 'filmes' || it.media === 'streaming' ? (it.tmdb?.watch?.flatrate || []).map(p => p.name || p).slice(0, 3).join(', ') : '';
+  const text = `${m.icon} ${SHARE_VERB[it.media]}: *${it.title}*${det ? ` (${det})` : ''}${quem}`
+    + (syn ? `\n\n${syn}` : '')
+    + (onde ? `\n\n📍 Onde assistir: ${onde}` : '')
+    + `\n\nVeja mais na Sessão de Entretenimento:`;
+  compartilhar(it.title, text, SITE + '?item=' + encodeURIComponent(uid(it)));
+}
+function shareApp() {
+  compartilhar('Sessão de Entretenimento',
+    '🍿 Sessão de Entretenimento — catálogo de filmes, séries, livros e jogos para decidir o que ver, ler ou jogar hoje. Dá para instalar como app no celular:',
+    SITE);
+}
+// link compartilhado: ?item=... abre a ficha assim que os dados chegarem
+let PENDING_ITEM = new URLSearchParams(location.search).get('item');
+function abrirPendente() {
+  if (!PENDING_ITEM) return;
+  const it = allItems().find(o => uid(o) === PENDING_ITEM);
+  if (!it) return;
+  PENDING_ITEM = null;
+  try { history.replaceState(null, '', location.pathname); } catch {}
+  S.open = [it]; renderDetail();
+}
+
 
 function openItem(u) {
   const it = allItems().find(o => uid(o) === u);
@@ -914,6 +968,8 @@ function bind() {
   $('#back').onclick = () => { S.open.pop(); renderDetail(); };
   $('#scrim').onclick = () => { S.open = []; renderDetail(); };
   $('#refresh').onclick = refreshAll;
+  $('#share').onclick = () => { const it = S.open.at(-1); if (it) shareItem(allItems().find(o => uid(o) === uid(it)) || it); };
+  $('#share-app').onclick = shareApp;
   document.addEventListener('keydown', e => { if (e.key === 'Escape' && S.open.length) { S.open = []; renderDetail(); } });
 }
 
