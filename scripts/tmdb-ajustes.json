@@ -1,4 +1,3 @@
 {
- "_comentario": "Ajustes para o TMDB achar a versão certa de um título sem mudar o Notion. Chave = título no Notion; ano = ano de lançamento da versão desejada.",
- "Um Dia de Cada Vez (One Day at a Time)": { "ano": 2017 }
+ "_comentario": "Ajustes para o TMDB achar a versão certa de um título sem mudar o Notion. Chave = título no Notion; ano = ano de lançamento da versão desejada."
 }

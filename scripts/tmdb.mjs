@@ -28,6 +28,7 @@ export async function enrichWithTmdb(sources, token, previous = {}) {
     const base = it.title.replace(/\([^)]*\)/g, '').replace(/\s+/g, ' ').trim();
     let year = /^\d{4}$/.test(it.year || '') ? it.year : '';
     for (const p of paren) if (/^\d{4}$/.test(p)) year = year || p;
+    for (const p of paren) { const m = p.match(/,\s*(\d{4})$/); if (m) year = year || m[1]; }
     if (AJUSTES[it.title]?.ano) year = String(AJUSTES[it.title].ano);
     if (it.original) out.push(it.original.replace(/\([^)]*\)/g, '').trim());
     for (const p of paren) if (!/^\d{4}$/.test(p) && !/^\d+/.test(p)) out.push(p.replace(/,?\s*\d{4}$/, '').trim());
