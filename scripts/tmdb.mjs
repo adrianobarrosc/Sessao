@@ -1,5 +1,8 @@
 // Enriquece filmes e séries com dados do TMDB: pôster, nota e onde assistir no Brasil (JustWatch via TMDB).
+import { readFileSync } from 'node:fs';
 const API = 'https://api.themoviedb.org/3';
+let AJUSTES = {};
+try { AJUSTES = JSON.parse(readFileSync(new URL('./tmdb-ajustes.json', import.meta.url), 'utf8')); } catch {}
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 
 export async function enrichWithTmdb(sources, token, previous = {}) {
@@ -25,6 +28,7 @@ export async function enrichWithTmdb(sources, token, previous = {}) {
     const base = it.title.replace(/\([^)]*\)/g, '').replace(/\s+/g, ' ').trim();
     let year = /^\d{4}$/.test(it.year || '') ? it.year : '';
     for (const p of paren) if (/^\d{4}$/.test(p)) year = year || p;
+    if (AJUSTES[it.title]?.ano) year = String(AJUSTES[it.title].ano);
     if (it.original) out.push(it.original.replace(/\([^)]*\)/g, '').trim());
     for (const p of paren) if (!/^\d{4}$/.test(p) && !/^\d+/.test(p)) out.push(p.replace(/,?\s*\d{4}$/, '').trim());
     out.push(base);
@@ -71,6 +75,7 @@ export async function enrichWithTmdb(sources, token, previous = {}) {
       const kind = key === 'filmes' ? 'movie' : 'tv';
       try {
         let hit = prevIds.get(key + '|' + it.title);
+        if (hit && (AJUSTES[it.title]?.ano || null) !== (hit.ajusteAno || null)) hit = null; // ajuste novo: procura de novo
         let id = hit?.id, info = hit;
         if (!id) {
           const r = await find(it, kind);
@@ -102,6 +107,7 @@ export async function enrichWithTmdb(sources, token, previous = {}) {
         }
         it.tmdb = {
           ...sinopse, ...serie,
+          ajusteAno: AJUSTES[it.title]?.ano || null,
           v: 2, id, type: kind, poster: info.poster || null, rating: info.rating || null, name: info.name || null,
           watch: br ? { link: br.link, flatrate: mapList(br.flatrate), free: mapList(br.free), ads: mapList(br.ads), rent: mapList(br.rent), buy: mapList(br.buy) } : { link: `https://www.themoviedb.org/${kind}/${id}/watch?locale=BR`, flatrate: [], free: [], ads: [], rent: [], buy: [] },
         };
