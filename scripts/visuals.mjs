@@ -231,3 +231,12 @@ export function aplicarCapasManuaisJogos(items) {
   for (const it of items || []) if (manuais[it.title] && !it.title.startsWith('_')) { { const { coverRemote, ...resto } = it.visual || {}; it.visual = { ...resto, v: it.visual?.v || VERSION, cover: manuais[it.title], source: it.visual?.source || 'manual', coverManual: true }; } m++; }
   if (m) console.log(`Jogos: ${m} capas definidas manualmente`);
 }
+
+// Resumos de jogos escritos à mão em português (para jogos que a RAWG não encontra): têm prioridade sobre a RAWG/IGDB.
+export function aplicarResumosManuaisJogos(items) {
+  let manuais = {};
+  try { manuais = JSON.parse(readFileSync(new URL('./resumos-manuais-jogos.json', import.meta.url), 'utf8')); } catch {}
+  let m = 0;
+  for (const it of items || []) if (manuais[it.title] && !it.title.startsWith('_') && !it.synopsis) { it.extSummary = { text: manuais[it.title], source: 'Claude', lang: 'pt', manual: true }; m++; }
+  if (m) console.log(`Jogos: ${m} resumos definidos manualmente`);
+}

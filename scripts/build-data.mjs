@@ -6,7 +6,7 @@ const require = createRequire(import.meta.url);
 const { parsePage, SOURCES } = require('./parser.cjs');
 
 import { enrichWithTmdb } from './tmdb.mjs';
-import { enrichBooks, enrichGames, enrichGamesRawg, aplicarCapasManuaisJogos } from './visuals.mjs';
+import { enrichBooks, enrichGames, enrichGamesRawg, aplicarCapasManuaisJogos, aplicarResumosManuaisJogos } from './visuals.mjs';
 import { espelharCapasJogos } from './espelhar-capas.mjs';
 import { aplicarTraducoes, aplicarTraducoesSeries } from './traducoes.mjs';
 const TOKEN = process.env.NOTION_TOKEN;
@@ -109,6 +109,7 @@ if (RAWG && out.sources.games?.items) {
 aplicarCapasManuaisJogos(out.sources.games?.items);
 try { await espelharCapasJogos(out.sources.games?.items); } catch (e) { console.error('Espelhar capas: ' + e.message); }
 aplicarTraducoes(out.sources.games?.items);
+aplicarResumosManuaisJogos(out.sources.games?.items);
 aplicarTraducoesSeries(out.sources.streaming?.items);
 if (!TOKEN) out.generatedAt = previous.generatedAt || out.generatedAt;
 writeFileSync('data.json', JSON.stringify(out));
