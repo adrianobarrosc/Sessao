@@ -106,8 +106,27 @@ export async function enrichWithTmdb(sources, token, previous = {}) {
             }
           }
         }
+        // Direção/criação e elenco principal (guardado: só busca uma vez por título)
+        let people = hit?.people;
+        if (!people) {
+          try {
+            if (kind === 'movie') {
+              const c = await get(`/movie/${id}/credits`, { language: 'pt-BR' });
+              people = {
+                dir: [...new Set((c.crew || []).filter(x => x.job === 'Director').map(x => x.name))],
+                cast: (c.cast || []).slice(0, 8).map(x => x.name),
+              };
+            } else {
+              const det = await get(`/tv/${id}`, { language: 'pt-BR', append_to_response: 'aggregate_credits' });
+              people = {
+                dir: (det.created_by || []).map(x => x.name),
+                cast: (det.aggregate_credits?.cast || []).slice(0, 8).map(x => x.name),
+              };
+            }
+          } catch (e) { console.error(`TMDB créditos: ${it.title}: ${e.message}`); people = undefined; }
+        }
         it.tmdb = {
-          ...sinopse, ...serie,
+          ...sinopse, ...serie, ...(people ? { people } : {}),
           ajusteAno: AJUSTES[it.title]?.ano || null,
           v: 2, id, type: kind, poster: info.poster || null, rating: info.rating || null, name: info.name || null,
           watch: br ? { link: br.link, flatrate: mapList(br.flatrate), free: mapList(br.free), ads: mapList(br.ads), rent: mapList(br.rent), buy: mapList(br.buy) } : { link: `https://www.themoviedb.org/${kind}/${id}/watch?locale=BR`, flatrate: [], free: [], ads: [], rent: [], buy: [] },

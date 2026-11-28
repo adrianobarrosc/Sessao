@@ -167,6 +167,15 @@ h1 { font: 800 clamp(30px, 6vw, 64px)/.95 var(--display); overflow-wrap: anywher
 .syn-bloco h3 span { text-transform: none; letter-spacing: 0; color: var(--accent); }
 .syn-bloco p { margin: 0 0 8px; }
 .syn-bloco.atual { border-left: 3px solid var(--accent); padding-left: 12px; }
+.pessoas { margin: 18px 0 4px; display: grid; gap: 14px; }
+.pessoas h3 { margin: 0 0 8px; font-size: 12px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); }
+.pchips { display: flex; flex-wrap: wrap; gap: 8px; }
+.pchip { font: inherit; font-size: 13px; padding: 5px 12px; border-radius: 999px; cursor: pointer; background: var(--surface); color: var(--ink); border: 1px solid var(--line); display: inline-flex; align-items: center; gap: 6px; }
+.pchip:hover { border-color: var(--accent); }
+.pchip.tem { border-color: color-mix(in srgb, var(--accent) 55%, transparent); }
+.pchip span { font-size: 11px; font-weight: 700; color: var(--accent); }
+.pessoa-alvo { color: var(--accent); }
+#person-clear { font: 600 13px/1 inherit; letter-spacing: 0; text-transform: none; color: var(--muted); margin-left: 6px; vertical-align: middle; }
 .facts { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 1px; background: var(--line); border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; }
 .facts div { background: var(--surface); padding: 10px 14px; }
 .facts dt { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); }
@@ -519,6 +528,7 @@ const S = {
   genres: [],
   where: '',
   q: '',
+  person: '',        // filtro por diretor, ator ou autor
   open: [],           // pilha de itens abertos no painel
   mcp: null,
 };
@@ -657,12 +667,36 @@ function whereOptions(items) {
   for (const it of items) for (const l of it.lists) if (l) c.set(l, (c.get(l) || 0) + 1);
   return [...c.entries()].sort((a, b) => a[0].localeCompare(b[0], 'pt'));
 }
+/* ---------- pessoas: direção, criação, elenco e autoria ---------- */
+const splitNames = s => String(s || '').replace(/\([^)]*\)/g, '').split(/\s*(?:,|;|&|\s+e\s+|\s+and\s+)\s*/).map(x => x.trim()).filter(x => x.length > 2 && !/^(vários|varios|diversos|—|-)$/i.test(x));
+const PEOPLE_CACHE = new WeakMap();
+function peopleOf(it) {
+  if (PEOPLE_CACHE.has(it)) return PEOPLE_CACHE.get(it);
+  const out = [];
+  const add = (name, role) => { if (name && !out.some(o => fold(o.name) === fold(name))) out.push({ name, role }); };
+  if (it.media === 'leitura') splitNames(it.creator).forEach(n => add(n, 'autor'));
+  else if (it.media === 'filmes' || it.media === 'streaming') {
+    const p = it.tmdb?.people;
+    (p?.dir?.length ? p.dir : splitNames(it.creator)).forEach(n => add(n, 'dir'));
+    (p?.cast || []).forEach(n => add(n, 'cast'));
+  }
+  PEOPLE_CACHE.set(it, out);
+  return out;
+}
+let PEOPLE_COUNT = new Map();
+function buildPeople() {
+  PEOPLE_COUNT = new Map();
+  for (const it of allItems()) for (const p of peopleOf(it)) { const k = fold(p.name); PEOPLE_COUNT.set(k, (PEOPLE_COUNT.get(k) || 0) + 1); }
+}
+const hasPerson = (it, name) => peopleOf(it).some(p => fold(p.name) === fold(name));
+
 function filtered() {
   const q = fold(S.q).trim();
   return scope().filter(it =>
+    (!S.person || hasPerson(it, S.person)) &&
     S.genres.every(g => it.genres.includes(g)) &&
     (!S.where || it.lists.includes(S.where)) &&
-    (!q || fold([it.title, it.original, it.creator, it.genreText, it.synopsis, it.lists.join(' ')].join(' ')).includes(q))
+    (!q || fold([it.title, it.original, it.creator, it.genreText, it.synopsis, it.lists.join(' '), peopleOf(it).map(p => p.name).join(' ')].join(' ')).includes(q))
   );
 }
 
@@ -677,7 +711,11 @@ function similarity(a, b) {
   const shared = a.genres.filter(g => b.genres.includes(g));
   let s = shared.reduce((acc, g) => acc + (IDF.get(g) || 1), 0);
   if (s) s /= Math.sqrt(a.genres.length * b.genres.length);
-  if (a.creator && b.creator && fold(a.creator) === fold(b.creator)) s += 1.5;
+  const pb = new Map(peopleOf(b).map(p => [fold(p.name), p.role]));
+  let pessoa = 0;
+  for (const p of peopleOf(a)) { const r = pb.get(fold(p.name)); if (r) pessoa += (p.role === 'cast' && r === 'cast') ? 0.5 : 1.5; }
+  if (!pessoa && a.creator && b.creator && fold(a.creator) === fold(b.creator)) pessoa = 1.5;
+  s += Math.min(pessoa, 3);
   if (a.media === b.media && a.lists.some(l => b.lists.includes(l))) s += 0.15;
   return { s, shared };
 }
@@ -810,7 +848,8 @@ function renderResults() {
   const list = filtered();
   const sorted = list.slice().sort((a, b) => (b.genres.filter(g => S.genres.includes(g)).length - a.genres.filter(g => S.genres.includes(g)).length) || a.title.localeCompare(b.title, 'pt'));
   const label = S.media === 'all' ? 'opções' : { filmes: 'filmes', streaming: 'séries', leitura: 'leituras', games: 'jogos' }[S.media];
-  $('#count').innerHTML = `<b>${list.length}</b> ${label}${S.genres.length ? ' em ' + S.genres.map(esc).join(' + ') : ''}`;
+  $('#count').innerHTML = `<b>${list.length}</b> ${label}${S.person ? ` com <span class="pessoa-alvo">${esc(S.person)}</span> <button class="link" id="person-clear" title="Tirar o filtro de pessoa">✕ limpar</button>` : ''}${S.genres.length ? ' em ' + S.genres.map(esc).join(' + ') : ''}`;
+  const pc = $('#person-clear'); if (pc) pc.onclick = () => { S.person = ''; renderAll(); };
   $('#surprise').disabled = !list.length;
   const loading = SOURCES.some(s => (S.status[s.key] || {}).state === 'loading') && !allItems().length;
   $('#results').innerHTML = loading
@@ -819,7 +858,7 @@ function renderResults() {
       `<div class="empty"><p>Nada com essa combinação.</p><button class="btn ghost" id="clear">Limpar filtros</button></div>`;
   $('#more').hidden = sorted.length <= LIMIT;
   $('#more').textContent = `Mostrar mais ${Math.min(60, sorted.length - LIMIT)} de ${sorted.length - LIMIT} restantes`;
-  const clear = $('#clear'); if (clear) clear.onclick = () => { S.genres = []; S.where = ''; S.q = ''; $('#q').value = ''; savePrefs(); renderAll(); };
+  const clear = $('#clear'); if (clear) clear.onclick = () => { S.genres = []; S.where = ''; S.q = ''; S.person = ''; $('#q').value = ''; savePrefs(); renderAll(); };
 }
 
 
@@ -838,6 +877,29 @@ function duplo(it) {
   return geral || atual ? `<div class="d-syn duplo">${geral}${atual}</div>` : '';
 }
 
+function sharedPeople(a, b) {
+  const nb = new Set(peopleOf(b).map(p => fold(p.name)));
+  const c = peopleOf(a).filter(p => nb.has(fold(p.name))).map(p => p.name);
+  return c.length ? 'com ' + c.slice(0, 2).map(esc).join(', ') : '';
+}
+function pessoasHTML(it) {
+  const ps = peopleOf(it);
+  if (!ps.length) return '';
+  const rot = it.media === 'leitura' ? { autor: 'Autoria' } : { dir: it.media === 'streaming' ? 'Criação' : 'Direção', cast: 'Elenco' };
+  const chip = p => {
+    const n = (PEOPLE_COUNT.get(fold(p.name)) || 1) - 1;
+    return `<button class="pchip${n ? ' tem' : ''}" data-person="${esc(p.name)}" title="${n ? `Ver mais ${n} título${n > 1 ? 's' : ''} com ${esc(p.name)} no seu catálogo` : `Só este título com ${esc(p.name)} no seu catálogo`}">${esc(p.name)}${n ? `<span>+${n}</span>` : ''}</button>`;
+  };
+  const grupos = Object.entries(rot).map(([r, t]) => [t, ps.filter(p => p.role === r)]).filter(([, l]) => l.length);
+  return `<section class="pessoas">${grupos.map(([t, l]) => `<div class="pgrupo"><h3>${t}</h3><div class="pchips">${l.map(chip).join('')}</div></div>`).join('')}
+    <p class="attr">Toque num nome para ver tudo dessa pessoa no seu catálogo.${it.tmdb?.people ? ' Direção e elenco: TMDB.' : ''}</p></section>`;
+}
+function escolherPessoa(nome) {
+  S.person = nome; S.media = 'all'; S.genres = []; S.where = ''; S.q = ''; $('#q').value = ''; LIMIT = 60;
+  S.open = []; renderAll();
+  document.querySelector('.resbar')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
 function renderDetail() {
   const panel = $('#detail');
   const it = S.open[S.open.length - 1];
@@ -846,7 +908,7 @@ function renderDetail() {
   const m = MEDIA[fresh.media];
   const rel = related(fresh);
   const relList = arr => arr.length
-    ? `<div class="rel">${arr.map(({ o, shared }) => cardHTML(o, `<span class="why">${shared.length ? 'em comum: ' + shared.slice(0, 3).map(esc).join(', ') : 'mesmo autor/diretor'}</span>`)).join('')}</div>`
+    ? `<div class="rel">${arr.map(({ o, shared }) => cardHTML(o, `<span class="why">${sharedPeople(fresh, o) || (shared.length ? 'em comum: ' + shared.slice(0, 3).map(esc).join(', ') : 'mesmo autor/diretor')}</span>`)).join('')}</div>`
     : '<p class="muted">Nada parecido por aqui.</p>';
   $('#detail-body').innerHTML = `
     <div class="d-head m-${fresh.media}${coverUrl(fresh) ? ' has-poster' : ''}"${posterStyle(fresh, 'w780')}>
@@ -867,6 +929,7 @@ function renderDetail() {
       ${fresh.tmdb?.rating ? `<div><dt>Nota no TMDB</dt><dd>★ ${fresh.tmdb.rating.toFixed(1).replace('.', ',')}</dd></div>` : ''}
       <div><dt>No Notion</dt><dd>${esc(fresh.lists.join(' · '))}</dd></div>
     </dl>
+    ${pessoasHTML(fresh)}
     ${watchHTML(fresh)}
     ${fresh.game?.url ? `<p class="attr">Imagem, nota e resumo do jogo: <a href="${esc(fresh.game.url)}" target="_blank" rel="noopener">RAWG ↗</a></p>` : ''}
     <a class="btn ghost notion" href="${esc(fresh.url)}" target="_blank" rel="noopener">Abrir a página ${esc(m.label)} no Notion ↗</a>
@@ -879,7 +942,7 @@ function renderDetail() {
 }
 
 function renderAll() {
-  buildIdf();
+  buildIdf(); buildPeople();
   renderStatus(); renderMedia(); renderGenres(); renderResults(); renderDetail();
   abrirPendente();
 }
@@ -959,6 +1022,8 @@ function bind() {
   document.body.addEventListener('click', e => {
     const c = e.target.closest('.card[data-uid]');
     if (c) { if (!c.closest('#detail')) S.open = []; openItem(c.dataset.uid); return; }
+    const pp = e.target.closest('[data-person]');
+    if (pp) { escolherPessoa(pp.dataset.person); return; }
     const gp = e.target.closest('[data-genre-pick]');
     if (gp) { S.genres = [gp.dataset.genrePick]; S.media = S.open.at(-1)?.media || S.media; S.open = []; savePrefs(); renderAll(); window.scrollTo({ top: 0, behavior: 'smooth' }); }
   });
